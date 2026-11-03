@@ -15,11 +15,6 @@ public class CategoriaLogica {
         this.datos = new CategoriaDatos();
     }
 
-    /**
-     * TEMPORAL: solo existe para que las pruebas viejas sigan compilando.
-     * La ruta ya no se usa porque los datos vienen de MySQL.
-     * Se borra cuando se actualicen las pruebas.
-     */
     @Deprecated
     public CategoriaLogica(String rutaArchivo) {
         this();
