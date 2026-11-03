@@ -1,9 +1,18 @@
 package app.Servicios;
 
 import app.DTO.ReservaDTO;
-import app.DTO.ResultadoDeAsignacionDTO;
 import app.Logica.LogicaReservas;
+import com.google.gson.Gson;
+
+import java.net.ConnectException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 public class ServicioReservas {
     private final LogicaReservas logicaReservas = new LogicaReservas();

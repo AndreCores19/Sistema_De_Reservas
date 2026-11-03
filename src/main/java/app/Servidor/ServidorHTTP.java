@@ -11,16 +11,16 @@ public class ServidorHTTP {
     private HttpServer servidor;
 
     public void iniciar() throws IOException {
-        // 1. crear
         servidor = HttpServer.create(new InetSocketAddress("0.0.0.0", PUERTO), 0);
 
-        // 2. registrar rutas
+        //registrar rutas
         servidor.createContext("/usuario/login", new LoginHandler());
+        servidor.createContext("/usuario/cambiarClave", new CambiarClaveHandler());
 
-        // 3. executor
+        // executor
         servidor.setExecutor(Executors.newFixedThreadPool(10));
 
-        // 4. arrancar
+        // arrancar
         servidor.start();
 
         // mensajes de consola
