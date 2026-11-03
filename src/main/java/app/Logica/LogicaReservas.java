@@ -1,186 +1,192 @@
 package app.Logica;
 
-import app.DTO.CategoriaDTO;
 import app.DTO.RecursoDTO;
-import app.Logica.CategoriaLogica;
 import app.DTO.ReservaDTO;
-import app.Datos.RecursoDatos;
-import app.Datos.ReservaDatos;
 import app.DTO.ResultadoDeAsignacionDTO;
+import app.Datos.ReservaDatos;
+
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 public class LogicaReservas {
-    private RecursoDatos recursoDatos;
-    private ReservaDatos reservaDatos;
-    private CategoriaLogica categoriaLogica;
+
+    private static final Object CANDADO_RESERVAS = new Object();
+    private static final int LARGO_MAXIMO_ACTIVIDAD = 100;
+
+    private final ReservaDatos reservaDatos;
+    private final CategoriaLogica categoriaLogica;
 
     public LogicaReservas() {
-        this.recursoDatos = new RecursoDatos();
-        this.recursoDatos.setRutaArchivo("Data/recursos.json");
         this.reservaDatos = new ReservaDatos();
-        this.reservaDatos.setRutaArchivo("Data/reservas.json");
         this.categoriaLogica = new CategoriaLogica();
     }
 
+    @Deprecated
     public LogicaReservas(String rutaReservas) {
-        this.recursoDatos = new RecursoDatos();
-        this.recursoDatos.setRutaArchivo("Data/recursos.json");
-        this.reservaDatos = new ReservaDatos();
-        this.reservaDatos.setRutaArchivo(rutaReservas);
-        this.categoriaLogica = new CategoriaLogica();
+        this();
     }
 
     public List<ReservaDTO> listarTodas() {
-        reservaDatos.deserializar();
-        return reservaDatos.getReservas();
+        try {
+            return reservaDatos.listarTodas();
+        } catch (SQLException e) {
+            throw new RuntimeException("No se pudieron consultar las reservas.", e);
+        }
     }
 
     public List<ReservaDTO> listarPorRango(LocalDate desde, LocalDate hasta) {
-        List<ReservaDTO> todas = listarTodas();
-        List<ReservaDTO> resultado = new ArrayList<>();
-
-        for (ReservaDTO reserva : todas) {
-            boolean dentroDelRango = !reserva.getFecha().isBefore(desde) && !reserva.getFecha().isAfter(hasta);
-            boolean estaActiva = !reserva.getEstado().equals("CANCELADA");
-
-            if (dentroDelRango && estaActiva) {
-                resultado.add(reserva);
-            }
+        try {
+            return reservaDatos.listarActivasPorRango(desde, hasta);
+        } catch (SQLException e) {
+            throw new RuntimeException("No se pudieron consultar las reservas del rango.", e);
         }
-        return resultado;
-    }
-
-    public boolean tieneReservasActivas(String idFuncionario) {
-        List<ReservaDTO> todas = listarTodas();
-        for(ReservaDTO reserva : todas) {
-            if (reserva.getIdFuncionario().equals(idFuncionario) && !reserva.getEstado().equals("CANCELADA")) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public List<ReservaDTO> listarReservasPorFuncionario(String idFuncionario) {
-        List<ReservaDTO> todas = listarTodas();
-        List<ReservaDTO> resultado = new ArrayList<>();
-        for(ReservaDTO reserva : todas) {
-            if (reserva.getIdFuncionario().equals(idFuncionario)) {
-                resultado.add(reserva);
-            }
+        try {
+            return reservaDatos.listarPorFuncionario(idFuncionario);
+        } catch (SQLException e) {
+            throw new RuntimeException("No se pudieron consultar las reservas del funcionario.", e);
         }
-        return resultado;
+    }
+
+    public boolean tieneReservasActivas(String idFuncionario) {
+        try {
+            return reservaDatos.tieneActivasPorFuncionario(idFuncionario);
+        } catch (SQLException e) {
+            throw new RuntimeException("No se pudieron revisar las reservas del funcionario.", e);
+        }
     }
 
     public boolean tieneReservasActivasPorRecurso(String numActivo) throws Exception {
-        List<ReservaDTO> todas = listarTodas();
-        for(ReservaDTO reserva : todas) {
-            if (reserva.getIdsRecursosAsignados().contains(numActivo) && !reserva.getEstado().equals("CANCELADA")) {
+        return reservaDatos.tieneActivasPorRecurso(numActivo);
+    }
+
+
+    public void agregarReserva(ReservaDTO nueva) throws Exception {
+        validarReserva(nueva);
+
+        synchronized (CANDADO_RESERVAS) {
+            ResultadoDeAsignacionDTO resultado = estaDisponible(nueva);
+            if (!resultado.isExitosa()) {
+                throw new Exception("No hay recursos disponibles en ese horario para: "
+                        + nombresDeCategorias(resultado.getIdsCategoriasNoDisponibles()));
+            }
+
+            nueva.setIdsRecursosAsignados(resultado.getIdsRecursosAsignados());
+            nueva.setIdReserva(generarSiguienteId());
+            nueva.setEstado("ACTIVA");
+            reservaDatos.insertar(nueva);
+        }
+    }
+
+    public void cancelarReserva(String idReserva) throws Exception {
+        ReservaDTO reserva = reservaDatos.buscarPorId(idReserva);
+        if (reserva == null) {
+            throw new Exception("No se encontró la reserva con el ID proporcionado.");
+        }
+        if ("CANCELADA".equals(reserva.getEstado())) {
+            throw new Exception("La reserva ya está cancelada.");
+        }
+        if (!esFechaFutura(reserva.getFecha(), reserva.getHoraInicio())) {
+            throw new Exception("No se puede cancelar una reserva pasada.");
+        }
+        reservaDatos.actualizarEstado(idReserva, "CANCELADA");
+    }
+
+    private void validarReserva(ReservaDTO reserva) throws Exception {
+        if (reserva.getActividad() == null || reserva.getActividad().trim().isEmpty()) {
+            throw new Exception("Debe ingresar el nombre de la actividad.");
+        }
+        if (reserva.getActividad().length() > LARGO_MAXIMO_ACTIVIDAD) {
+            throw new Exception("La actividad no puede tener más de " + LARGO_MAXIMO_ACTIVIDAD + " caracteres.");
+        }
+        if (reserva.getFecha() == null || reserva.getHoraInicio() == null || reserva.getHoraFin() == null) {
+            throw new Exception("Debe indicar la fecha y las horas de la reserva.");
+        }
+        if (!reserva.getHoraFin().isAfter(reserva.getHoraInicio())) {
+            throw new Exception("La hora de fin debe ser posterior a la hora de inicio.");
+        }
+        if (reserva.getIdsCategoriaSolicitada() == null || reserva.getIdsCategoriaSolicitada().isEmpty()) {
+            throw new Exception("Debe seleccionar al menos una categoría.");
+        }
+        if (reserva.getIdFuncionario() == null || reserva.getIdFuncionario().trim().isEmpty()) {
+            throw new Exception("La reserva debe tener un funcionario.");
+        }
+        if (!esFechaFutura(reserva.getFecha(), reserva.getHoraInicio())) {
+            throw new Exception("La fecha y hora de la reserva deben ser futuras.");
+        }
+    }
+
+    private ResultadoDeAsignacionDTO estaDisponible(ReservaDTO reserva) throws Exception {
+        List<ReservaDTO> reservasDelDia = reservaDatos.listarActivasPorRango(reserva.getFecha(), reserva.getFecha());
+        RecursoLogica recursoLogica = new RecursoLogica();
+
+        List<String> idsCategoriasNoDisponibles = new ArrayList<>();
+        List<String> idsRecursosAsignados = new ArrayList<>();
+
+        for (String idCategoria : reserva.getIdsCategoriaSolicitada()) {
+            categoriaLogica.buscarPorId(idCategoria); // lanza excepción si la categoría no existe
+
+            String recursoLibre = null;
+            for (RecursoDTO recurso : recursoLogica.filtrarPorCategoria(idCategoria)) {
+                if (!estaOcupado(recurso.getNumActivo(), reserva, reservasDelDia)) {
+                    recursoLibre = recurso.getNumActivo();
+                    break;
+                }
+            }
+
+            if (recursoLibre != null) {
+                idsRecursosAsignados.add(recursoLibre);
+            } else {
+                idsCategoriasNoDisponibles.add(idCategoria);
+            }
+        }
+        return new ResultadoDeAsignacionDTO(idsCategoriasNoDisponibles.isEmpty(),
+                idsCategoriasNoDisponibles, idsRecursosAsignados);
+    }
+
+    private boolean estaOcupado(String numActivo, ReservaDTO nueva, List<ReservaDTO> reservasDelDia) {
+        for (ReservaDTO existente : reservasDelDia) {
+            if (existente.getIdsRecursosAsignados().contains(numActivo)
+                    && hayConflictoHoras(nueva.getHoraInicio(), nueva.getHoraFin(),
+                    existente.getHoraInicio(), existente.getHoraFin())) {
                 return true;
             }
         }
         return false;
     }
 
-    public void agregarReserva(ReservaDTO nueva) throws Exception {
-        ResultadoDeAsignacionDTO resultado = estaDisponible(nueva);
-        nueva.setIdsRecursosAsignados(resultado.getIdsRecursosAsignados());
-
-        reservaDatos.deserializar();
-        String nuevoId = generarSiguienteId(reservaDatos.getReservas());
-        nueva.setIdReserva(nuevoId);
-        reservaDatos.getReservas().add(nueva);
-        reservaDatos.serializar();
-    }
-
-    private String generarSiguienteId(List<ReservaDTO> reservas) {
-        int maxId = 0;
-        for (ReservaDTO r : reservas) {
+    private String nombresDeCategorias(List<String> idsCategorias) {
+        List<String> nombres = new ArrayList<>();
+        for (String id : idsCategorias) {
             try {
-                int idNum = Integer.parseInt(r.getIdReserva());
-                if (idNum > maxId) {
-                    maxId = idNum;
-                }
-            } catch (NumberFormatException e) { }
-        }
-        return String.valueOf(maxId + 1);
-    }
-
-    private ResultadoDeAsignacionDTO estaDisponible(ReservaDTO reserva) throws Exception {
-        List<ReservaDTO> todasLasReservas = listarTodas();
-        List<CategoriaDTO> todasLasCategorias = categoriaLogica.listarTodas();
-        RecursoLogica recursoLogica = new RecursoLogica();
-        List<String> idsCategoriasNoDisponibles = new ArrayList<>();
-        List<String> idsRecursosAsignados = new ArrayList<>();
-        if(!esFechaFutura(reserva.getFecha(), reserva.getHoraInicio())){
-            throw new Exception("La fecha y hora de la reserva deben ser futuras.");
-        }
-        for(String idCategoriaSolicitada : reserva.getIdsCategoriaSolicitada()){
-            for(CategoriaDTO categoria : todasLasCategorias){
-                if(categoria.getId().equals(idCategoriaSolicitada)){
-                    boolean recursoEncontrado = false;
-                    List<RecursoDTO> recursosDeCategoria = recursoLogica.filtrarPorCategoria(categoria.getId());
-                    for(RecursoDTO recurso : recursosDeCategoria){
-                        boolean recursoOcupado = false;
-                        for(ReservaDTO reservaExistente : todasLasReservas){
-                            if(reservaExistente.getEstado().equals("CANCELADA")) continue;
-                            if (reservaExistente.getIdsRecursosAsignados() != null
-                                    && reservaExistente.getIdsRecursosAsignados().contains(recurso.getNumActivo())
-                                    && comparacionFechas(reserva.getFecha(), reservaExistente.getFecha())
-                                    && hayConflictoHoras(reserva.getHoraInicio(), reserva.getHoraFin(),
-                                    reservaExistente.getHoraInicio(), reservaExistente.getHoraFin())) {
-                                recursoOcupado = true;
-                                break;
-                            }
-                        }
-                        if(!recursoOcupado){
-                            idsRecursosAsignados.add(recurso.getNumActivo());
-                            recursoEncontrado = true;
-                            break;
-                        }
-                    }
-                    if(!recursoEncontrado){
-                        idsCategoriasNoDisponibles.add(idCategoriaSolicitada);
-                    }
-                    break;
-                }
+                nombres.add(categoriaLogica.buscarPorId(id).getDescripcion());
+            } catch (Exception e) {
+                nombres.add(id);
             }
         }
-        return new ResultadoDeAsignacionDTO(idsCategoriasNoDisponibles.isEmpty(), idsCategoriasNoDisponibles, idsRecursosAsignados);
+        return String.join(", ", nombres);
     }
 
-    public void cancelarReserva(String idReserva) throws Exception {
-        reservaDatos.deserializar();
-        List<ReservaDTO> reservas = reservaDatos.getReservas();
-        boolean encontrada = false;
-        for (ReservaDTO reserva : reservas) {
-            if (reserva.getIdReserva().equals(idReserva)) {
-                if (reserva.getEstado().equals("CANCELADA")) {
-                    throw new Exception("La reserva ya está cancelada.");
-                }
-                if(!esFechaFutura(reserva.getFecha(), reserva.getHoraInicio())) {
-                    throw new Exception("No se puede cancelar una reserva pasada.");
-                }
-                reserva.setEstado("CANCELADA");
-                encontrada = true;
-                break;
-            }
+    private String generarSiguienteId() throws SQLException {
+        String ultimoId = reservaDatos.obtenerUltimoId();
+        int numero = 0;
+        if (ultimoId != null && ultimoId.startsWith("RES-")) {
+            numero = Integer.parseInt(ultimoId.substring(4));
         }
-        if (!encontrada) {
-            throw new Exception("No se encontró la reserva con el ID proporcionado.");
-        }
-        reservaDatos.serializar();
+        return String.format("RES-%06d", numero + 1);
     }
 
     public boolean hayConflictoHoras(LocalTime horaInicioA, LocalTime horaFinA, LocalTime horaInicioB, LocalTime horaFinB) {
         return horaInicioA.isBefore(horaFinB) && horaInicioB.isBefore(horaFinA);
     }
-    private boolean comparacionFechas(LocalDate fechaA, LocalDate fechaB) {
-        return fechaA.equals(fechaB);
-    }
-    private boolean esFechaFutura(LocalDate fechaA, LocalTime horaInicioA) {
-        return fechaA.isAfter(LocalDate.now()) || fechaA.equals(LocalDate.now()) && horaInicioA.isAfter(LocalTime.now());
+
+    private boolean esFechaFutura(LocalDate fecha, LocalTime horaInicio) {
+        return fecha.isAfter(LocalDate.now())
+                || (fecha.equals(LocalDate.now()) && horaInicio.isAfter(LocalTime.now()));
     }
 }

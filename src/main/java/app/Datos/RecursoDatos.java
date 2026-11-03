@@ -1,69 +1,122 @@
 package app.Datos;
 
+import app.DTO.CategoriaDTO;
 import app.DTO.RecursoDTO;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.lang.reflect.Type;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class RecursoDatos {
 
-    private String rutaArchivo;
-    private List<RecursoDTO> listado;
-    private Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    private static final String SELECT_BASE =
+            "SELECT r.num_activo, r.descripcion, "
+                    + "c.id AS id_categoria, c.descripcion AS descripcion_categoria "
+                    + "FROM recursos r "
+                    + "INNER JOIN categorias c ON r.id_categoria = c.id ";
 
-    public RecursoDatos(String rutaArchivo) {
-        this.rutaArchivo = rutaArchivo;
-        this.listado = new ArrayList<>();
+    public List<RecursoDTO> listarTodos() throws SQLException {
+        String sql = SELECT_BASE + "ORDER BY r.num_activo";
+        List<RecursoDTO> recursos = new ArrayList<>();
+
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql);
+             ResultSet resultado = sentencia.executeQuery()) {
+
+            while (resultado.next()) {
+                recursos.add(crearRecurso(resultado));
+            }
+        }
+        return recursos;
     }
 
-    public RecursoDatos() {
-        this.listado = new ArrayList<>();
+    public RecursoDTO buscarPorNumActivo(String numActivo) throws SQLException {
+        String sql = SELECT_BASE + "WHERE r.num_activo = ?";
+
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
+
+            sentencia.setString(1, numActivo);
+
+            try (ResultSet resultado = sentencia.executeQuery()) {
+                if (resultado.next()) {
+                    return crearRecurso(resultado);
+                }
+            }
+        }
+        return null;
     }
 
-    public String getRutaArchivo() {
-        return rutaArchivo;
+    public List<RecursoDTO> filtrarPorCategoria(String idCategoria) throws SQLException {
+        String sql = SELECT_BASE + "WHERE r.id_categoria = ? ORDER BY r.num_activo";
+        List<RecursoDTO> recursos = new ArrayList<>();
+
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
+
+            sentencia.setString(1, idCategoria);
+
+            try (ResultSet resultado = sentencia.executeQuery()) {
+                while (resultado.next()) {
+                    recursos.add(crearRecurso(resultado));
+                }
+            }
+        }
+        return recursos;
     }
 
-    public void setRutaArchivo(String rutaArchivo) {
-        this.rutaArchivo = rutaArchivo;
-    }
+    public void insertar(RecursoDTO recurso) throws SQLException {
+        String sql = "INSERT INTO recursos (num_activo, id_categoria, descripcion) VALUES (?, ?, ?)";
 
-    public List<RecursoDTO> getListado() {
-        return listado;
-    }
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
 
-    public void setListado(List<RecursoDTO> listado) {
-        this.listado = listado;
-    }
+            sentencia.setString(1, recurso.getNumActivo());
+            sentencia.setString(2, recurso.getCategoria().getId());
+            sentencia.setString(3, recurso.getDescripcion());
 
-    public void serializar() {
-        try (FileWriter writer = new FileWriter(rutaArchivo)) {
-            gson.toJson(listado, writer);
-        } catch (Exception e) {
-            e.printStackTrace();
+            sentencia.executeUpdate();
         }
     }
 
-    public void deserializar() {
-        File archivo = new File(rutaArchivo);
-        if (!archivo.exists()) {
-            listado = new ArrayList<>();
-            return;
+    public boolean actualizar(RecursoDTO recurso) throws SQLException {
+        String sql = "UPDATE recursos SET id_categoria = ?, descripcion = ? WHERE num_activo = ?";
+
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
+
+            sentencia.setString(1, recurso.getCategoria().getId());
+            sentencia.setString(2, recurso.getDescripcion());
+            sentencia.setString(3, recurso.getNumActivo());
+
+            return sentencia.executeUpdate() > 0;
         }
-        try (FileReader reader = new FileReader(archivo)) {
-            Type tipoLista = new TypeToken<List<RecursoDTO>>(){}.getType();
-            List<RecursoDTO> lista = gson.fromJson(reader, tipoLista);
-            listado = (lista != null) ? lista : new ArrayList<>();
-        } catch (Exception e) {
-            e.printStackTrace();
-            listado = new ArrayList<>();
+    }
+
+    public boolean eliminar(String numActivo) throws SQLException {
+        String sql = "DELETE FROM recursos WHERE num_activo = ?";
+
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
+
+            sentencia.setString(1, numActivo);
+
+            return sentencia.executeUpdate() > 0;
         }
+    }
+
+    private RecursoDTO crearRecurso(ResultSet resultado) throws SQLException {
+        CategoriaDTO categoria = new CategoriaDTO(
+                resultado.getString("id_categoria"),
+                resultado.getString("descripcion_categoria")
+        );
+        return new RecursoDTO(
+                resultado.getString("num_activo"),
+                categoria,
+                resultado.getString("descripcion")
+        );
     }
 }
