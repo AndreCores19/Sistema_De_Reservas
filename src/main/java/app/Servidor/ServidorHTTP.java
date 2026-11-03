@@ -14,8 +14,7 @@ public class ServidorHTTP {
         servidor = HttpServer.create(new InetSocketAddress("0.0.0.0", PUERTO), 0);
 
         //registrar rutas
-        servidor.createContext("/usuario/login", new LoginHandler());
-        servidor.createContext("/usuario/cambiarClave", new CambiarClaveHandler());
+        servidor.createContext("/usuario", new UsuarioHandler());
 
         // executor
         servidor.setExecutor(Executors.newFixedThreadPool(10));

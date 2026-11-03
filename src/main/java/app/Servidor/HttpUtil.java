@@ -1,5 +1,6 @@
 package app.Servidor;
 
+import app.DTO.GsonUtil;
 import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
 import java.io.IOException;
@@ -11,7 +12,7 @@ import java.util.Map;
 
 public class HttpUtil {
 
-    private static final Gson gson = new Gson();
+    private static final Gson gson = GsonUtil.GSON;
 
     public static String leerCuerpo(HttpExchange exchange) throws IOException {
         byte[] bytes = exchange.getRequestBody().readAllBytes();

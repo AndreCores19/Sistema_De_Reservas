@@ -1,5 +1,6 @@
 package app.Servicios;
 
+import app.DTO.GsonUtil;
 import com.google.gson.Gson;
 
 import java.net.ConnectException;
@@ -14,12 +15,12 @@ import java.util.Map;
 public abstract class ClienteBase {
 
     protected final HttpClient cliente = HttpClient.newHttpClient();
-    protected final Gson gson = new Gson();
+    protected final Gson gson = GsonUtil.GSON;
 
-    protected String enviarPost(String ruta, String cuerpo) throws Exception {
+    private String enviar(String ruta, String cuerpo, String tipoContenido) throws Exception {
         HttpRequest solicitud = HttpRequest.newBuilder()
                 .uri(URI.create(ConfigCliente.URL_SERVIDOR + ruta))
-                .header("Content-Type", "application/x-www-form-urlencoded")
+                .header("Content-Type", tipoContenido)
                 .POST(HttpRequest.BodyPublishers.ofString(cuerpo))
                 .build();
 
@@ -48,5 +49,13 @@ public abstract class ClienteBase {
         } catch (Exception e) {
             return "Error del servidor.";
         }
+    }
+
+    protected String enviarPost(String ruta, String cuerpo) throws Exception {
+        return enviar(ruta, cuerpo, "application/x-www-form-urlencoded");
+    }
+
+    protected String enviarPostJson(String ruta, Object objeto) throws Exception {
+        return enviar(ruta, gson.toJson(objeto), "application/json");
     }
 }
