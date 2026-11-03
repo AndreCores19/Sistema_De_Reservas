@@ -107,8 +107,7 @@
                         </Button>
                      </children>
                   </GridPane>
-                  <TextField fx:id="txtFIDCateg" disable="true" editable="false" text="El id se autogenerará..." GridPane.columnIndex="1" GridPane.halignment="LEFT" GridPane.hgrow="NEVER" GridPane.valignment="CENTER" GridPane.vgrow="NEVER">
-                     <GridPane.margin>
+                  <TextField fx:id="txtFIDCateg" disable="true" editable="false" promptText="El id se autogenerará..." GridPane.columnIndex="1" GridPane.halignment="LEFT" GridPane.hgrow="NEVER" GridPane.valignment="CENTER" GridPane.vgrow="NEVER">                     <GridPane.margin>
                         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
                      </GridPane.margin>
                   </TextField>

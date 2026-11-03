@@ -4,101 +4,67 @@ import app.DTO.CategoriaDTO;
 import app.DTO.RecursoDTO;
 import app.Datos.CategoriaDatos;
 
-import java.util.ArrayList;
+import java.sql.SQLException;
 import java.util.List;
 
 public class CategoriaLogica {
 
-    private String rutaArchivo;
+    private final CategoriaDatos datos;
 
     public CategoriaLogica() {
-        this("Data/categorias.json");
+        this.datos = new CategoriaDatos();
     }
 
+    /**
+     * TEMPORAL: solo existe para que las pruebas viejas sigan compilando.
+     * La ruta ya no se usa porque los datos vienen de MySQL.
+     * Se borra cuando se actualicen las pruebas.
+     */
+    @Deprecated
     public CategoriaLogica(String rutaArchivo) {
-        this.rutaArchivo = rutaArchivo;
+        this();
     }
 
     public List<CategoriaDTO> listarTodas() {
-        CategoriaDatos datos = new CategoriaDatos();
-        datos.setRutaArchivo(rutaArchivo);
-        datos.deserializar();
-        return datos.getListado();
+        try {
+            return datos.listarTodas();
+        } catch (SQLException e) {
+            throw new RuntimeException("No se pudieron consultar las categorías.", e);
+        }
     }
 
     public CategoriaDTO buscarPorId(String id) throws Exception {
-        for (CategoriaDTO c : listarTodas()) {
-            if (c.getId().equals(id)) {
-                return c;
-            }
+        CategoriaDTO categoria = datos.buscarPorId(id);
+        if (categoria == null) {
+            throw new Exception("No existe una categoría con id: " + id);
         }
-        throw new Exception("No existe una categoría con id: " + id);
+        return categoria;
     }
 
     public List<CategoriaDTO> buscarPorDescripcion(String texto) {
-        List<CategoriaDTO> resultado = new ArrayList<>();
-        for (CategoriaDTO c : listarTodas()) {
-            if (c.getDescripcion().toLowerCase().contains(texto.toLowerCase())) {
-                resultado.add(c);
-            }
+        try {
+            return datos.buscarPorDescripcion(texto);
+        } catch (SQLException e) {
+            throw new RuntimeException("No se pudieron buscar las categorías.", e);
         }
-        return resultado;
     }
 
     public void agregar(CategoriaDTO nueva) throws Exception {
-        if (nueva.getDescripcion() == null || nueva.getDescripcion().trim().isEmpty()) {
-            throw new Exception("La descripción no puede estar vacía.");
-        }
-
-        CategoriaDatos datos = new CategoriaDatos();
-        datos.setRutaArchivo(rutaArchivo);
-        datos.deserializar();
-
-        String nuevoId = generarSiguienteId(datos.getListado());
-        nueva.setId(nuevoId);
-
-        datos.getListado().add(nueva);
-        datos.serializar();
+        validarDescripcion(nueva);
+        nueva.setId(generarSiguienteId());
+        datos.insertar(nueva);
     }
 
     public void modificar(CategoriaDTO actualizada) throws Exception {
-        if (actualizada.getDescripcion() == null || actualizada.getDescripcion().trim().isEmpty()) {
-            throw new Exception("La descripción no puede estar vacía.");
-        }
-
-        CategoriaDatos datos = new CategoriaDatos();
-        datos.setRutaArchivo(rutaArchivo);
-        datos.deserializar();
-
-        boolean encontrada = false;
-        for (CategoriaDTO c : datos.getListado()) {
-            if (c.getId().equals(actualizada.getId())) {
-                c.setDescripcion(actualizada.getDescripcion());
-                encontrada = true;
-                break;
-            }
-        }
-
+        validarDescripcion(actualizada);
+        boolean encontrada = datos.actualizar(actualizada);
         if (!encontrada) {
             throw new Exception("No existe una categoría con ese id.");
         }
-        datos.serializar();
     }
 
     public void eliminar(String id) throws Exception {
-        CategoriaDatos datos = new CategoriaDatos();
-        datos.setRutaArchivo(rutaArchivo);
-        datos.deserializar();
-
-        CategoriaDTO encontrada = null;
-        for (CategoriaDTO c : datos.getListado()) {
-            if (c.getId().equals(id)) {
-                encontrada = c;
-                break;
-            }
-        }
-
-        if (encontrada == null) {
+        if (datos.buscarPorId(id) == null) {
             throw new Exception("No existe una categoría con ese id.");
         }
 
@@ -108,20 +74,21 @@ public class CategoriaLogica {
             throw new Exception("No se puede eliminar: la categoría tiene recursos asociados.");
         }
 
-        datos.getListado().remove(encontrada);
-        datos.serializar();
+        datos.eliminar(id);
     }
 
-    private String generarSiguienteId(List<CategoriaDTO> lista) {
-        int maxNumero = 0;
-        for (CategoriaDTO c : lista) {
-            String soloNumero = c.getId().replace("CAT-", "");
-            int numero = Integer.parseInt(soloNumero);
-            if (numero > maxNumero) {
-                maxNumero = numero;
-            }
+    private void validarDescripcion(CategoriaDTO categoria) throws Exception {
+        if (categoria.getDescripcion() == null || categoria.getDescripcion().trim().isEmpty()) {
+            throw new Exception("La descripción no puede estar vacía.");
         }
-        int siguiente = maxNumero + 1;
-        return String.format("CAT-%06d", siguiente);
+    }
+
+    private String generarSiguienteId() throws SQLException {
+        String ultimoId = datos.obtenerUltimoId();
+        int numero = 0;
+        if (ultimoId != null) {
+            numero = Integer.parseInt(ultimoId.replace("CAT-", ""));
+        }
+        return String.format("CAT-%06d", numero + 1);
     }
 }

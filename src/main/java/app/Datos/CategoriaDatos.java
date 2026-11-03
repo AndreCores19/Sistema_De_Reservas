@@ -1,69 +1,122 @@
 package app.Datos;
 
 import app.DTO.CategoriaDTO;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.lang.reflect.Type;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CategoriaDatos {
 
-    private String rutaArchivo;
-    private List<CategoriaDTO> listado;
-    private Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    public List<CategoriaDTO> listarTodas() throws SQLException {
+        String sql = "SELECT id, descripcion FROM categorias ORDER BY id";
+        List<CategoriaDTO> categorias = new ArrayList<>();
 
-    public CategoriaDatos(String rutaArchivo) {
-        this.rutaArchivo = rutaArchivo;
-        this.listado = new ArrayList<>();
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql);
+             ResultSet resultado = sentencia.executeQuery()) {
+
+            while (resultado.next()) {
+                categorias.add(crearCategoria(resultado));
+            }
+        }
+        return categorias;
     }
 
-    public CategoriaDatos() {
-        this.listado = new ArrayList<>();
+    public CategoriaDTO buscarPorId(String id) throws SQLException {
+        String sql = "SELECT id, descripcion FROM categorias WHERE id = ?";
+
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
+
+            sentencia.setString(1, id);
+
+            try (ResultSet resultado = sentencia.executeQuery()) {
+                if (resultado.next()) {
+                    return crearCategoria(resultado);
+                }
+            }
+        }
+        return null;
     }
 
-    public String getRutaArchivo() {
-        return rutaArchivo;
+    public List<CategoriaDTO> buscarPorDescripcion(String texto) throws SQLException {
+        String sql = "SELECT id, descripcion FROM categorias WHERE descripcion LIKE ? ORDER BY id";
+        List<CategoriaDTO> categorias = new ArrayList<>();
+
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
+
+            sentencia.setString(1, "%" + texto + "%");
+
+            try (ResultSet resultado = sentencia.executeQuery()) {
+                while (resultado.next()) {
+                    categorias.add(crearCategoria(resultado));
+                }
+            }
+        }
+        return categorias;
     }
 
-    public void setRutaArchivo(String rutaArchivo) {
-        this.rutaArchivo = rutaArchivo;
-    }
+    public void insertar(CategoriaDTO categoria) throws SQLException {
+        String sql = "INSERT INTO categorias (id, descripcion) VALUES (?, ?)";
 
-    public List<CategoriaDTO> getListado() {
-        return listado;
-    }
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
 
-    public void setListado(List<CategoriaDTO> listado) {
-        this.listado = listado;
-    }
+            sentencia.setString(1, categoria.getId());
+            sentencia.setString(2, categoria.getDescripcion());
 
-    public void serializar() {
-        try (FileWriter writer = new FileWriter(rutaArchivo)) {
-            gson.toJson(listado, writer);
-        } catch (Exception e) {
-            e.printStackTrace();
+            sentencia.executeUpdate();
         }
     }
 
-    public void deserializar() {
-        File archivo = new File(rutaArchivo);
-        if (!archivo.exists()) {
-            listado = new ArrayList<>();
-            return;
+    public boolean actualizar(CategoriaDTO categoria) throws SQLException {
+        String sql = "UPDATE categorias SET descripcion = ? WHERE id = ?";
+
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
+
+            sentencia.setString(1, categoria.getDescripcion());
+            sentencia.setString(2, categoria.getId());
+
+            return sentencia.executeUpdate() > 0;
         }
-        try (FileReader reader = new FileReader(archivo)) {
-            Type tipoLista = new TypeToken<List<CategoriaDTO>>(){}.getType();
-            List<CategoriaDTO> lista = gson.fromJson(reader, tipoLista);
-            listado = (lista != null) ? lista : new ArrayList<>();
-        } catch (Exception e) {
-            e.printStackTrace();
-            listado = new ArrayList<>();
+    }
+
+    public boolean eliminar(String id) throws SQLException {
+        String sql = "DELETE FROM categorias WHERE id = ?";
+
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
+
+            sentencia.setString(1, id);
+
+            return sentencia.executeUpdate() > 0;
         }
+    }
+
+    public String obtenerUltimoId() throws SQLException {
+        String sql = "SELECT MAX(id) AS ultimo FROM categorias";
+
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql);
+             ResultSet resultado = sentencia.executeQuery()) {
+
+            if (resultado.next()) {
+                return resultado.getString("ultimo");
+            }
+        }
+        return null;
+    }
+
+    private CategoriaDTO crearCategoria(ResultSet resultado) throws SQLException {
+        return new CategoriaDTO(
+                resultado.getString("id"),
+                resultado.getString("descripcion")
+        );
     }
 }

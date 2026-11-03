@@ -99,4 +99,7 @@ INSERT INTO reserva_recurso (id_reserva, num_activo) VALUES
     ('RES-000007', '238715'),
     ('RES-000008', '34343'),
     ('RES-000008', '238715');
-
+##Para que todos tengamos el mismo user y contraseña
+CREATE USER IF NOT EXISTS 'reservas_app'@'localhost' IDENTIFIED BY 'Reservas2026!';
+GRANT ALL PRIVILEGES ON sistema_reservas.* TO 'reservas_app'@'localhost';
+ 
