@@ -4,52 +4,60 @@ import app.DTO.AdministradorDTO;
 import app.DTO.FuncionarioDTO;
 import app.DTO.UsuarioDTO;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 public class UsuarioDatos {
 
-    private String rutaArchivoAdmins;
-    private String rutaArchivoFuncionarios;
+    public UsuarioDTO buscarPorId(String id) throws SQLException {
+        String sql = "SELECT id, clave, rol, nombre, telefono FROM usuarios WHERE id = ?";
 
-    public UsuarioDatos(String rutaArchivoAdmins, String rutaArchivoFuncionarios) {
-        this.rutaArchivoAdmins = rutaArchivoAdmins;
-        this.rutaArchivoFuncionarios = rutaArchivoFuncionarios;
-    }
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
 
-    public UsuarioDatos() {
-    }
+            sentencia.setString(1, id);
 
-    public String getRutaArchivoAdmins() {
-        return rutaArchivoAdmins;
-    }
-
-    public void setRutaArchivoAdmins(String rutaArchivoAdmins) {
-        this.rutaArchivoAdmins = rutaArchivoAdmins;
-    }
-
-    public String getRutaArchivoFuncionarios() {
-        return rutaArchivoFuncionarios;
-    }
-
-    public void setRutaArchivoFuncionarios(String rutaArchivoFuncionarios) {
-        this.rutaArchivoFuncionarios = rutaArchivoFuncionarios;
-    }
-
-    // Busca los atributos en los dos  archivos y devuelve el UsuarioDTO si coincide
-    public UsuarioDTO iniciarSesion(String id, String clave) {
-        AdministradorDatos adminDatos = new AdministradorDatos(rutaArchivoAdmins);
-        adminDatos.deserializar();
-        for (AdministradorDTO admin : adminDatos.getListado()) {
-            if (admin.getId().equals(id) && admin.getClave().equals(clave)) {
-                return admin;
-            }
-        }
-
-        FuncionarioDatos funcionarioDatos = new FuncionarioDatos(rutaArchivoFuncionarios);
-        funcionarioDatos.deserializar();
-        for (FuncionarioDTO funcionario : funcionarioDatos.getListado()) {
-            if (funcionario.getId().equals(id) && funcionario.getClave().equals(clave)) {
-                return funcionario;
+            try (ResultSet resultado = sentencia.executeQuery()) {
+                if (resultado.next()) {
+                    return crearUsuario(resultado);
+                }
             }
         }
         return null;
+    }
+
+    public boolean actualizarClave(String id, String claveNueva) throws SQLException {
+        String sql = "UPDATE usuarios SET clave = ? WHERE id = ?";
+
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
+
+            sentencia.setString(1, claveNueva);
+            sentencia.setString(2, id);
+
+            return sentencia.executeUpdate() > 0;
+        }
+    }
+
+    private UsuarioDTO crearUsuario(ResultSet resultado) throws SQLException {
+        String rol = resultado.getString("rol");
+
+        if ("ADMIN".equals(rol)) {
+            return new AdministradorDTO(
+                    resultado.getString("nombre"),
+                    resultado.getString("id"),
+                    resultado.getString("clave"),
+                    rol
+            );
+        }
+        return new FuncionarioDTO(
+                resultado.getString("id"),
+                resultado.getString("clave"),
+                rol,
+                resultado.getString("nombre"),
+                resultado.getString("telefono")
+        );
     }
 }

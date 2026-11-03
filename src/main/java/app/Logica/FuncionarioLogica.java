@@ -3,123 +3,108 @@ package app.Logica;
 import app.DTO.FuncionarioDTO;
 import app.Datos.FuncionarioDatos;
 
-import java.util.ArrayList;
+import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.List;
 
 public class FuncionarioLogica {
 
-    private LogicaReservas reservaLogica;
-    private String rutaArchivo;
+    private static final int LARGO_MAXIMO_ID = 15;
+    private static final int LARGO_MAXIMO_TELEFONO = 15;
+    private static final int LARGO_MAXIMO_NOMBRE = 100;
+
+    private final FuncionarioDatos datos;
+    private final LogicaReservas reservaLogica;
 
     public FuncionarioLogica() {
-        this("Data/funcionarios.json");
-    }
-
-    public FuncionarioLogica(String rutaArchivo) {
-        this.rutaArchivo = rutaArchivo;
+        this.datos = new FuncionarioDatos();
         this.reservaLogica = new LogicaReservas();
     }
 
-    public String getRutaArchivo() {
-        return rutaArchivo;
+    @Deprecated
+    public FuncionarioLogica(String rutaArchivo) {
+        this();
     }
 
     public List<FuncionarioDTO> listarTodos() {
-        FuncionarioDatos datos = new FuncionarioDatos();
-        datos.setRutaArchivo(rutaArchivo);
-        datos.deserializar();
-        return datos.getListado();
+        try {
+            return datos.listarTodos();
+        } catch (SQLException e) {
+            throw new RuntimeException("No se pudieron consultar los funcionarios.", e);
+        }
     }
 
     public FuncionarioDTO buscarPorId(String id) throws Exception {
-        for (FuncionarioDTO f : listarTodos()) {
-            if (f.getId().equals(id)) {
-                return f;
-            }
+        FuncionarioDTO funcionario = datos.buscarPorId(id);
+        if (funcionario == null) {
+            throw new Exception("No existe un funcionario con id: " + id);
         }
-        throw new Exception("No existe un funcionario con id: " + id);
+        return funcionario;
     }
 
     public List<FuncionarioDTO> buscarPorNombre(String texto) {
-        List<FuncionarioDTO> resultado = new ArrayList<>();
-        for (FuncionarioDTO f : listarTodos()) {
-            if (f.getNombre() != null && f.getNombre().toLowerCase().contains(texto.toLowerCase())) {
-                resultado.add(f);
-            }
+        try {
+            return datos.buscarPorNombre(texto);
+        } catch (SQLException e) {
+            throw new RuntimeException("No se pudieron buscar los funcionarios.", e);
         }
-        return resultado;
     }
 
     public void agregar(FuncionarioDTO nuevo) throws Exception {
         if (nuevo.getId() == null || nuevo.getId().trim().isEmpty()) {
             throw new Exception("El id del funcionario no puede estar vacío.");
         }
-        if (nuevo.getNombre() == null || nuevo.getNombre().trim().isEmpty()) {
-            throw new Exception("El nombre no puede estar vacío.");
+        if (nuevo.getId().trim().length() > LARGO_MAXIMO_ID) {
+            throw new Exception("El id no puede tener más de " + LARGO_MAXIMO_ID + " caracteres.");
         }
-        if (nuevo.getTelefono() == null || nuevo.getTelefono().trim().isEmpty()) {
-            throw new Exception("El teléfono no puede estar vacío.");
-        }
+        validarNombreYTelefono(nuevo);
 
-        FuncionarioDatos datos = new FuncionarioDatos();
-        datos.setRutaArchivo(rutaArchivo);
-        datos.deserializar();
-
-        for (FuncionarioDTO f : datos.getListado()) {
-            if (f.getId().equals(nuevo.getId())) {
-                throw new Exception("Ya existe un funcionario con ese id.");
-            }
+        nuevo.setId(nuevo.getId().trim());
+        if (datos.existeId(nuevo.getId())) {
+            throw new Exception("Ya existe un usuario con ese id.");
         }
 
         nuevo.setClave(nuevo.getId());
         nuevo.setRol("FUNCIONARIO");
-
-        datos.getListado().add(nuevo);
-        datos.serializar();
+        datos.insertar(nuevo);
     }
 
     public void modificar(FuncionarioDTO actualizado) throws Exception {
-        if (actualizado.getNombre() == null || actualizado.getNombre().trim().isEmpty()) {
-            throw new Exception("El nombre no puede estar vacío.");
-        }
-        if (actualizado.getTelefono() == null || actualizado.getTelefono().trim().isEmpty()) {
-            throw new Exception("El teléfono no puede estar vacío.");
-        }
+        validarNombreYTelefono(actualizado);
 
-        FuncionarioDatos datos = new FuncionarioDatos();
-        datos.setRutaArchivo(rutaArchivo);
-        datos.deserializar();
-
-        boolean encontrado = false;
-        for (FuncionarioDTO f : datos.getListado()) {
-            if (f.getId().equals(actualizado.getId())) {
-                f.setNombre(actualizado.getNombre());
-                f.setTelefono(actualizado.getTelefono());
-                encontrado = true;
-                break;
-            }
-        }
-
+        boolean encontrado = datos.actualizar(actualizado);
         if (!encontrado) {
             throw new Exception("No existe un funcionario con ese id.");
         }
-        datos.serializar();
     }
 
     public void eliminar(String id) throws Exception {
-        if (reservaLogica.tieneReservasActivas(id)) {
-             throw new Exception("No se puede eliminar: el funcionario tiene reservas activas .");
-        }
-
-        FuncionarioDatos datos = new FuncionarioDatos();
-        datos.setRutaArchivo(rutaArchivo);
-        datos.deserializar();
-
-        boolean eliminado = datos.getListado().removeIf(f -> f.getId().equals(id));
-
-        if (!eliminado) {
+        if (datos.buscarPorId(id) == null) {
             throw new Exception("No existe un funcionario con ese id.");
         }
-        datos.serializar();
+        if (reservaLogica.tieneReservasActivas(id)) {
+            throw new Exception("No se puede eliminar: el funcionario tiene reservas activas.");
+        }
+
+        try {
+            datos.eliminar(id);
+        } catch (SQLIntegrityConstraintViolationException e) {
+            throw new Exception("No se puede eliminar: el funcionario aparece en el historial de reservas.");
+        }
+    }
+
+    private void validarNombreYTelefono(FuncionarioDTO funcionario) throws Exception {
+        if (funcionario.getNombre() == null || funcionario.getNombre().trim().isEmpty()) {
+            throw new Exception("El nombre no puede estar vacío.");
+        }
+        if (funcionario.getNombre().length() > LARGO_MAXIMO_NOMBRE) {
+            throw new Exception("El nombre no puede tener más de " + LARGO_MAXIMO_NOMBRE + " caracteres.");
+        }
+        if (funcionario.getTelefono() == null || funcionario.getTelefono().trim().isEmpty()) {
+            throw new Exception("El teléfono no puede estar vacío.");
+        }
+        if (funcionario.getTelefono().length() > LARGO_MAXIMO_TELEFONO) {
+            throw new Exception("El teléfono no puede tener más de " + LARGO_MAXIMO_TELEFONO + " caracteres.");
+        }
     }
 }

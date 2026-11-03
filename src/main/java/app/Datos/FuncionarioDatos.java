@@ -1,70 +1,132 @@
 package app.Datos;
 
-import app.DTO.AdministradorDTO;
 import app.DTO.FuncionarioDTO;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.lang.reflect.Type;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class FuncionarioDatos {
 
-    private String rutaArchivo;
-    private List<FuncionarioDTO> listado;
-    private Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    private static final String SELECT_BASE =
+            "SELECT id, clave, rol, nombre, telefono FROM usuarios WHERE rol = 'FUNCIONARIO' ";
 
-    public FuncionarioDatos(String rutaArchivo) {
-        this.rutaArchivo = rutaArchivo;
-        this.listado = new ArrayList<>();
+    public List<FuncionarioDTO> listarTodos() throws SQLException {
+        String sql = SELECT_BASE + "ORDER BY nombre";
+        List<FuncionarioDTO> funcionarios = new ArrayList<>();
+
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql);
+             ResultSet resultado = sentencia.executeQuery()) {
+
+            while (resultado.next()) {
+                funcionarios.add(crearFuncionario(resultado));
+            }
+        }
+        return funcionarios;
     }
 
-    public FuncionarioDatos() {
-        this.listado = new ArrayList<>();
+    public FuncionarioDTO buscarPorId(String id) throws SQLException {
+        String sql = SELECT_BASE + "AND id = ?";
+
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
+
+            sentencia.setString(1, id);
+
+            try (ResultSet resultado = sentencia.executeQuery()) {
+                if (resultado.next()) {
+                    return crearFuncionario(resultado);
+                }
+            }
+        }
+        return null;
     }
 
-    public String getRutaArchivo() {
-        return rutaArchivo;
+    public List<FuncionarioDTO> buscarPorNombre(String texto) throws SQLException {
+        String sql = SELECT_BASE + "AND nombre LIKE ? ORDER BY nombre";
+        List<FuncionarioDTO> funcionarios = new ArrayList<>();
+
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
+
+            sentencia.setString(1, "%" + texto + "%");
+
+            try (ResultSet resultado = sentencia.executeQuery()) {
+                while (resultado.next()) {
+                    funcionarios.add(crearFuncionario(resultado));
+                }
+            }
+        }
+        return funcionarios;
     }
 
-    public void setRutaArchivo(String rutaArchivo) {
-        this.rutaArchivo = rutaArchivo;
-    }
+    public boolean existeId(String id) throws SQLException {
+        String sql = "SELECT 1 FROM usuarios WHERE id = ?";
 
-    public List<FuncionarioDTO> getListado() {
-        return listado;
-    }
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
 
-    public void setListado(List<FuncionarioDTO> listado) {
-        this.listado = listado;
-    }
+            sentencia.setString(1, id);
 
-    public void serializar() {
-        try (FileWriter writer = new FileWriter(rutaArchivo)) {
-            gson.toJson(listado, writer);
-        } catch (Exception e) {
-            e.printStackTrace();
+            try (ResultSet resultado = sentencia.executeQuery()) {
+                return resultado.next();
+            }
         }
     }
 
-    public void deserializar() {
-        File archivo = new File(rutaArchivo);
-        if (!archivo.exists()) {
-            listado = new ArrayList<>();
-            return;
+    public void insertar(FuncionarioDTO funcionario) throws SQLException {
+        String sql = "INSERT INTO usuarios (id, clave, rol, nombre, telefono) VALUES (?, ?, ?, ?, ?)";
+
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
+
+            sentencia.setString(1, funcionario.getId());
+            sentencia.setString(2, funcionario.getClave());
+            sentencia.setString(3, funcionario.getRol());
+            sentencia.setString(4, funcionario.getNombre());
+            sentencia.setString(5, funcionario.getTelefono());
+
+            sentencia.executeUpdate();
         }
-        try (FileReader reader = new FileReader(archivo)) {
-            Type tipoLista = new TypeToken<List<FuncionarioDTO>>(){}.getType();
-            List<FuncionarioDTO> lista = gson.fromJson(reader, tipoLista);
-            listado = (lista != null) ? lista : new ArrayList<>();
-        } catch (Exception e) {
-            e.printStackTrace();
-            listado = new ArrayList<>();
+    }
+
+    public boolean actualizar(FuncionarioDTO funcionario) throws SQLException {
+        String sql = "UPDATE usuarios SET nombre = ?, telefono = ? WHERE id = ? AND rol = 'FUNCIONARIO'";
+
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
+
+            sentencia.setString(1, funcionario.getNombre());
+            sentencia.setString(2, funcionario.getTelefono());
+            sentencia.setString(3, funcionario.getId());
+
+            return sentencia.executeUpdate() > 0;
         }
+    }
+
+    public boolean eliminar(String id) throws SQLException {
+        String sql = "DELETE FROM usuarios WHERE id = ? AND rol = 'FUNCIONARIO'";
+
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
+
+            sentencia.setString(1, id);
+
+            return sentencia.executeUpdate() > 0;
+        }
+    }
+
+    private FuncionarioDTO crearFuncionario(ResultSet resultado) throws SQLException {
+        return new FuncionarioDTO(
+                resultado.getString("id"),
+                resultado.getString("clave"),
+                resultado.getString("rol"),
+                resultado.getString("nombre"),
+                resultado.getString("telefono")
+        );
     }
 }

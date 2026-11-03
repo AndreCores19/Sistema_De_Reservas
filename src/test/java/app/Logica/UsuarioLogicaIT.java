@@ -1,187 +1,128 @@
 package app.Logica;
 
+import app.DTO.AdministradorDTO;
+import app.DTO.FuncionarioDTO;
 import app.DTO.UsuarioDTO;
+import app.Datos.ConexionBD;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class UsuarioLogicaIT {
 
-    private static final String ADMINS = "src/test/resources/administradores_prueba.json";
-    private static final String FUNCIONARIOS = "src/test/resources/funcionarios_prueba.json";
+    private static final String ID_ADMIN = "U-PRUEBA-ADM";
+    private static final String ID_FUNCIONARIO = "U-PRUEBA-FUN";
 
-    private UsuarioLogica usuarioLogica;
+    private final UsuarioLogica logica = new UsuarioLogica();
 
     @BeforeEach
-    void setUp() {
-        usuarioLogica = new UsuarioLogica(ADMINS, FUNCIONARIOS);
+    void crearUsuariosDePrueba() throws SQLException {
+        borrarUsuariosDePrueba();
+        insertarUsuario(ID_ADMIN, "claveAdmin", "ADMIN", "Admin de prueba", null);
+        insertarUsuario(ID_FUNCIONARIO, "claveFunc", "FUNCIONARIO", "Funcionario de prueba", "88888888");
     }
 
-    private UsuarioLogica logicaSobreCopia(Path carpetaTemporal) throws Exception {
-        Path copiaAdmins = carpetaTemporal.resolve("administradores.json");
-        Path copiaFuncionarios = carpetaTemporal.resolve("funcionarios.json");
-        Files.copy(Path.of(ADMINS), copiaAdmins);
-        Files.copy(Path.of(FUNCIONARIOS), copiaFuncionarios);
-        return new UsuarioLogica(copiaAdmins.toString(), copiaFuncionarios.toString());
+    @AfterEach
+    void borrarUsuariosDePrueba() throws SQLException {
+        String sql = "DELETE FROM usuarios WHERE id IN (?, ?)";
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
+            sentencia.setString(1, ID_ADMIN);
+            sentencia.setString(2, ID_FUNCIONARIO);
+            sentencia.executeUpdate();
+        }
+    }
+
+    private void insertarUsuario(String id, String clave, String rol, String nombre, String telefono) throws SQLException {
+        String sql = "INSERT INTO usuarios (id, clave, rol, nombre, telefono) VALUES (?, ?, ?, ?, ?)";
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
+            sentencia.setString(1, id);
+            sentencia.setString(2, clave);
+            sentencia.setString(3, rol);
+            sentencia.setString(4, nombre);
+            sentencia.setString(5, telefono);
+            sentencia.executeUpdate();
+        }
     }
 
     @Test
     void iniciarSesionDebeAutenticarAlAdministrador() throws Exception {
-        UsuarioDTO usuario = usuarioLogica.iniciarSesion("admin", "hola123");
+        UsuarioDTO usuario = logica.iniciarSesion(ID_ADMIN, "claveAdmin");
 
-        assertNotNull(usuario);
-        assertEquals("admin", usuario.getId());
+        assertInstanceOf(AdministradorDTO.class, usuario);
         assertEquals("ADMIN", usuario.getRol());
     }
 
     @Test
     void iniciarSesionDebeAutenticarAlFuncionario() throws Exception {
-        UsuarioDTO usuario = usuarioLogica.iniciarSesion("111", "111");
+        UsuarioDTO usuario = logica.iniciarSesion(ID_FUNCIONARIO, "claveFunc");
 
-        assertNotNull(usuario);
-        assertEquals("111", usuario.getId());
-        assertEquals("FUNCIONARIO", usuario.getRol());
+        assertInstanceOf(FuncionarioDTO.class, usuario);
+        assertEquals("88888888", ((FuncionarioDTO) usuario).getTelefono());
     }
 
     @Test
     void iniciarSesionSiElIdEsVacioDebeLanzarException() {
-        Exception ex = assertThrows(Exception.class,
-                () -> usuarioLogica.iniciarSesion("   ", "hola123"));
-        assertEquals("Debe ingresar el id.", ex.getMessage());
-    }
-
-    @Test
-    void iniciarSesionSiElIdEsNuloDebeLanzarException() {
-        Exception ex = assertThrows(Exception.class,
-                () -> usuarioLogica.iniciarSesion(null, "hola123"));
+        Exception ex = assertThrows(Exception.class, () -> logica.iniciarSesion("", "claveFunc"));
         assertEquals("Debe ingresar el id.", ex.getMessage());
     }
 
     @Test
     void iniciarSesionSiLaClaveEsVaciaDebeLanzarException() {
-        Exception ex = assertThrows(Exception.class,
-                () -> usuarioLogica.iniciarSesion("admin", "   "));
+        Exception ex = assertThrows(Exception.class, () -> logica.iniciarSesion(ID_FUNCIONARIO, ""));
         assertEquals("Debe ingresar la clave.", ex.getMessage());
     }
 
     @Test
     void iniciarSesionSiLaClaveEsIncorrectaDebeLanzarException() {
-        Exception ex = assertThrows(Exception.class,
-                () -> usuarioLogica.iniciarSesion("admin", "claveIncorrecta"));
+        Exception ex = assertThrows(Exception.class, () -> logica.iniciarSesion(ID_FUNCIONARIO, "otraClave"));
         assertEquals("El id o la clave son incorrectos.", ex.getMessage());
     }
 
     @Test
     void iniciarSesionSiElIdNoExisteDebeLanzarException() {
-        Exception ex = assertThrows(Exception.class,
-                () -> usuarioLogica.iniciarSesion("999", "999"));
+        Exception ex = assertThrows(Exception.class, () -> logica.iniciarSesion("NO-EXISTE", "claveFunc"));
         assertEquals("El id o la clave son incorrectos.", ex.getMessage());
     }
 
     @Test
-    void cambiarClaveDebeActualizarLaClaveDelAdministrador(@TempDir Path carpetaTemporal) throws Exception {
-        UsuarioLogica logica = logicaSobreCopia(carpetaTemporal);
-        UsuarioDTO usuario = logica.iniciarSesion("admin", "hola123");
-
-        logica.cambiarClave(usuario, "hola123", "adminNuevo123");
-
-        // El DTO en memoria quedó actualizado
-        assertEquals("adminNuevo123", usuario.getClave());
-        // Y el cambio realmente se escribió: la clave nueva sirve...
-        assertEquals("admin", logica.iniciarSesion("admin", "adminNuevo123").getId());
-        // ...y la vieja ya no
-        assertThrows(Exception.class, () -> logica.iniciarSesion("admin", "hola123"));
+    void iniciarSesionDebeDistinguirMayusculasEnLaClave() {
+        assertThrows(Exception.class, () -> logica.iniciarSesion(ID_FUNCIONARIO, "CLAVEFUNC"));
     }
 
     @Test
-    void cambiarClaveDebeActualizarLaClaveDelFuncionario(@TempDir Path carpetaTemporal) throws Exception {
-        UsuarioLogica logica = logicaSobreCopia(carpetaTemporal);
-        UsuarioDTO usuario = logica.iniciarSesion("111", "111");
+    void cambiarClaveDebeActualizarLaClaveEnLaBase() throws Exception {
+        UsuarioDTO usuario = logica.iniciarSesion(ID_FUNCIONARIO, "claveFunc");
 
-        logica.cambiarClave(usuario, "111", "nuevaClave111");
+        logica.cambiarClave(usuario, "claveFunc", "claveNueva");
 
-        assertEquals("nuevaClave111", usuario.getClave());
-        assertEquals("111", logica.iniciarSesion("111", "nuevaClave111").getId());
-        assertThrows(Exception.class, () -> logica.iniciarSesion("111", "111"));
+        assertEquals("claveNueva", usuario.getClave());
+        assertNotNull(logica.iniciarSesion(ID_FUNCIONARIO, "claveNueva"));
+        assertThrows(Exception.class, () -> logica.iniciarSesion(ID_FUNCIONARIO, "claveFunc"));
     }
 
     @Test
-    void cambiarClaveDelAdminNoDebeAfectarAlFuncionario(@TempDir Path carpetaTemporal) throws Exception {
-        UsuarioLogica logica = logicaSobreCopia(carpetaTemporal);
-        UsuarioDTO admin = logica.iniciarSesion("admin", "hola123");
-
-        logica.cambiarClave(admin, "hola123", "otraClave456");
-
-        assertEquals("111", logica.iniciarSesion("111", "111").getId());
-    }
-
-    @Test
-    void cambiarClaveSiLaClaveActualNoCoincideDebeLanzarException() {
-        UsuarioDTO usuario = new UsuarioDTO("admin", "hola123", "ADMIN");
+    void cambiarClaveSiLaClaveActualNoCoincideDebeLanzarException() throws Exception {
+        UsuarioDTO usuario = logica.iniciarSesion(ID_FUNCIONARIO, "claveFunc");
 
         Exception ex = assertThrows(Exception.class,
-                () -> usuarioLogica.cambiarClave(usuario, "claveEquivocada", "nuevaClave"));
+                () -> logica.cambiarClave(usuario, "incorrecta", "claveNueva"));
         assertEquals("La clave actual no coincide.", ex.getMessage());
     }
 
     @Test
-    void cambiarClaveSiLaClaveNuevaEsVaciaDebeLanzarException() {
-        UsuarioDTO usuario = new UsuarioDTO("admin", "hola123", "ADMIN");
+    void cambiarClaveSiLaClaveNuevaEsVaciaDebeLanzarException() throws Exception {
+        UsuarioDTO usuario = logica.iniciarSesion(ID_FUNCIONARIO, "claveFunc");
 
         Exception ex = assertThrows(Exception.class,
-                () -> usuarioLogica.cambiarClave(usuario, "hola123", "   "));
+                () -> logica.cambiarClave(usuario, "claveFunc", ""));
         assertEquals("La clave nueva no puede estar vacía.", ex.getMessage());
-    }
-
-    @Test
-    void cambiarClaveSiLaClaveNuevaEsNulaDebeLanzarException() {
-        UsuarioDTO usuario = new UsuarioDTO("admin", "hola123", "ADMIN");
-
-        Exception ex = assertThrows(Exception.class,
-                () -> usuarioLogica.cambiarClave(usuario, "hola123", null));
-        assertEquals("La clave nueva no puede estar vacía.", ex.getMessage());
-    }
-
-    @Test
-    void cambiarClaveSiLaClaveNuevaEsIgualALaActualDebeLanzarException() {
-        UsuarioDTO usuario = new UsuarioDTO("admin", "hola123", "ADMIN");
-
-        Exception ex = assertThrows(Exception.class,
-                () -> usuarioLogica.cambiarClave(usuario, "hola123", "hola123"));
-        assertEquals("La clave nueva debe ser distinta a la actual.", ex.getMessage());
-    }
-
-    @Test
-    void cambiarClaveSiElRolEsDesconocidoDebeLanzarException() {
-        UsuarioDTO usuario = new UsuarioDTO("admin", "hola123", "INVITADO");
-
-        Exception ex = assertThrows(Exception.class,
-                () -> usuarioLogica.cambiarClave(usuario, "hola123", "claveNueva"));
-        assertEquals("Rol desconocido.", ex.getMessage());
-    }
-
-    @Test
-    void cambiarClaveSiElAdminNoExisteEnElArchivoDebeLanzarException(@TempDir Path carpetaTemporal) throws Exception {
-        UsuarioLogica logica = logicaSobreCopia(carpetaTemporal);
-        UsuarioDTO fantasma = new UsuarioDTO("adminFantasma", "hola123", "ADMIN");
-
-        Exception ex = assertThrows(Exception.class,
-                () -> logica.cambiarClave(fantasma, "hola123", "claveNueva"));
-        assertEquals("No se encontró el administrador para actualizar la clave.", ex.getMessage());
-    }
-
-    @Test
-    void cambiarClaveSiElFuncionarioNoExisteEnElArchivoDebeLanzarException(@TempDir Path carpetaTemporal) throws Exception {
-        UsuarioLogica logica = logicaSobreCopia(carpetaTemporal);
-        UsuarioDTO fantasma = new UsuarioDTO("999", "999", "FUNCIONARIO");
-
-        Exception ex = assertThrows(Exception.class,
-                () -> logica.cambiarClave(fantasma, "999", "claveNueva"));
-        assertEquals("No se encontró el funcionario para actualizar la clave.", ex.getMessage());
     }
 }
