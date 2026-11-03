@@ -39,10 +39,9 @@ public class UsuarioLogica {
         return usuario;
     }
 
-    public void cambiarClave(UsuarioDTO usuario, String claveActual, String claveNueva) throws Exception {
-        if (!usuario.getClave().equals(claveActual)) {
-            throw new Exception("La clave actual no coincide.");
-        }
+    public void cambiarClave(String id, String claveActual, String claveNueva) throws Exception {
+        UsuarioDTO usuario = iniciarSesion(id, claveActual);
+
         if (claveNueva == null || claveNueva.trim().isEmpty()) {
             throw new Exception("La clave nueva no puede estar vacía.");
         }
@@ -86,6 +85,5 @@ public class UsuarioLogica {
         } else {
             throw new Exception("Rol desconocido.");
         }
-        usuario.setClave(claveNueva);
     }
 }

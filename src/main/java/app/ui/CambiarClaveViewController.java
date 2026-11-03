@@ -2,7 +2,7 @@ package app.ui;
 
 import app.Controllers.SesionActual;
 import app.DTO.UsuarioDTO;
-import app.Servicios.ServicioUsuario;
+import app.Servicios.ServicioUsuarioCliente;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.PasswordField;
@@ -16,7 +16,7 @@ public class CambiarClaveViewController {
     @FXML private Button btnAceptar;
     @FXML private Button btnCancel;
 
-    private ServicioUsuario servicioUsuario = new ServicioUsuario();
+    private ServicioUsuarioCliente servicioUsuario = new ServicioUsuarioCliente();
 
     @FXML
     private void initialize() {
@@ -36,7 +36,7 @@ public class CambiarClaveViewController {
         }
 
         try {
-            servicioUsuario.cambiarClave(usuario, claveActual, claveNueva);
+            servicioUsuario.cambiarClave(usuario.getId(), claveActual, claveNueva);
             mostrarExito("Clave actualizada correctamente.");
             volverAlLogin(event);
         } catch (Exception e) {

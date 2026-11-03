@@ -10,7 +10,7 @@ public class ServicioUsuario {
         return usuarioLogica.iniciarSesion(id, clave);
     }
 
-    public void cambiarClave(UsuarioDTO usuario, String claveActual, String nuevaClave) throws Exception {
-        usuarioLogica.cambiarClave(usuario, claveActual, nuevaClave);
+    public void cambiarClave(String id, String claveActual, String nuevaClave) throws Exception {
+        usuarioLogica.cambiarClave(id, claveActual, nuevaClave);
     }
 }
