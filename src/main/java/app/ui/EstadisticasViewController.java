@@ -58,15 +58,22 @@ public class EstadisticasViewController {
         LocalDate desde = dteDesdeR.getValue();
         LocalDate hasta = dteHastaR.getValue();
 
-        List<ResultadoEstadisticaDTO> resultados = servicioEstadisticas.obtenerEstadisticaRecursos(desde, hasta);
-        if (resultados.isEmpty()) {
-            Alert alerta = new Alert(Alert.AlertType.INFORMATION, "No hay reservas en el rango de fechas seleccionado.");
-            alerta.showAndWait();
+        String errorRango = RangoFechas.validar(desde, hasta);
+        if (errorRango != null) {
+            mostrarError(errorRango);
             return;
         }
-        tblRecursos.setItems(FXCollections.observableArrayList(resultados));
-        imgGraficoR.setImage(servicioGeneradorGrafico.generar("Recursos Usados", "Categoría", "Cantidad", resultados));
-
+        try {
+            List<ResultadoEstadisticaDTO> resultados = servicioEstadisticas.obtenerEstadisticaRecursos(desde, hasta);
+            if (resultados.isEmpty()) {
+                mostrarInformacion("No hay reservas en el rango de fechas seleccionado.");
+                return;
+            }
+            tblRecursos.setItems(FXCollections.observableArrayList(resultados));
+            imgGraficoR.setImage(servicioGeneradorGrafico.generar("Recursos Usados", "Categoría", "Cantidad", resultados));
+        } catch (Exception e) {
+            mostrarError("No se pudieron cargar las estadísticas de recursos: " + mensajeError(e));
+        }
     }
 
     @FXML
@@ -74,14 +81,22 @@ public class EstadisticasViewController {
         LocalDate desde = dteDesdeA.getValue();
         LocalDate hasta = dteHastaA.getValue();
 
-        List<ResultadoEstadisticaDTO> resultados = servicioEstadisticas.obtenerEstadisticaActividades(desde, hasta);
-        if (resultados.isEmpty()) {
-            Alert alerta = new Alert(Alert.AlertType.INFORMATION, "No hay reservas en el rango de fechas seleccionado.");
-            alerta.showAndWait();
+        String errorRango = RangoFechas.validar(desde, hasta);
+        if (errorRango != null) {
+            mostrarError(errorRango);
             return;
         }
-        tblActividades.setItems(FXCollections.observableArrayList(resultados));
-        imgGraficoA.setImage(servicioGeneradorGrafico.generar("Actividades", "Semana", "Cantidad", resultados));
+        try {
+            List<ResultadoEstadisticaDTO> resultados = servicioEstadisticas.obtenerEstadisticaActividades(desde, hasta);
+            if (resultados.isEmpty()) {
+                mostrarInformacion("No hay reservas en el rango de fechas seleccionado.");
+                return;
+            }
+            tblActividades.setItems(FXCollections.observableArrayList(resultados));
+            imgGraficoA.setImage(servicioGeneradorGrafico.generar("Actividades", "Semana", "Cantidad", resultados));
+        } catch (Exception e) {
+            mostrarError("No se pudieron cargar las estadísticas de actividades: " + mensajeError(e));
+        }
     }
 
     @FXML
@@ -145,5 +160,25 @@ public class EstadisticasViewController {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void mostrarError(String mensaje) {
+        Alert alerta = new Alert(Alert.AlertType.ERROR, mensaje);
+        alerta.setTitle("Error");
+        alerta.setHeaderText(null);
+        alerta.showAndWait();
+    }
+
+    private void mostrarInformacion(String mensaje) {
+        Alert alerta = new Alert(Alert.AlertType.INFORMATION, mensaje);
+        alerta.setTitle("Información");
+        alerta.setHeaderText(null);
+        alerta.showAndWait();
+    }
+
+    private String mensajeError(Exception excepcion) {
+        return excepcion.getMessage() == null || excepcion.getMessage().isBlank()
+                ? "Error inesperado."
+                : excepcion.getMessage();
     }
 }

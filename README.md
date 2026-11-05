@@ -74,7 +74,7 @@ Controladores de las vistas:
 
 Objetos de transferencia utilizados entre capas:
 
-`UsuarioDTO`, `AdministradorDTO`, `FuncionarioDTO`, `CategoriaDTO`, `RecursoDTO`, `ReservaDTO`, `ResultadoDeAsignacionDTO`, `MatrizDTO`, `CeldaActividadDTO`, `ExtraccionIADTO` y `ResultadoEstadisticaDTO`.
+`UsuarioDTO`, `AdministradorDTO`, `FuncionarioDTO`, `CategoriaDTO`, `RecursoDTO`, `ReservaDTO`, `AlertaReservaDTO`, `ResultadoDeAsignacionDTO`, `MatrizDTO`, `CeldaActividadDTO`, `ExtraccionIADTO` y `ResultadoEstadisticaDTO`.
 
 #### `app.Servicios`
 
@@ -113,6 +113,8 @@ Las vistas se encuentran en `src/main/resources/app/ui/`:
 
 `SistemaDeReservasFuncionario.fxml` y `SistemaDeReservasFuncionarioAdmin.fxml` son contenedores `TabPane` que incorporan las vistas mediante `fx:include`. Después del login, `LoginViewController` carga el contenedor de funcionario o administrador según `UsuarioDTO.getRol()`. Por ello, los mantenimientos administrativos no aparecen en la interfaz de un funcionario.
 
+Ambos contenedores muestran `alertas-view.fxml` a la derecha de las pestañas. `AlertasViewController.recibirAlerta` y `recibirReserva` son los puntos de entrada seguros para el hilo de notificaciones del cliente: internamente usan `Platform.runLater`. Las alertas se mantienen en una lista observable, se pueden consultar en una ventana emergente y descartarse únicamente de forma local.
+
 ## Funcionalidades
 
 ### Login y sesión
@@ -131,7 +133,7 @@ Un funcionario puede:
 
 La lógica valida fechas no anteriores al día actual, horarios pasados para reservas del día actual y que la hora final sea posterior a la inicial. Para cada categoría seleccionada intenta asignar el primer recurso libre. El traslape se detecta con la condición:
 
-```java
+``` java
 horaInicioA.isBefore(horaFinB)
     && horaInicioB.isBefore(horaFinA)
 ```

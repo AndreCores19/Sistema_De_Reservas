@@ -2,28 +2,21 @@
 
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
+<?import javafx.scene.layout.BorderPane?>
 
-<TabPane fx:id="tbpFuncionario" pickOnBounds="false" prefHeight="630.0" prefWidth="800.0" tabClosingPolicy="UNAVAILABLE" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1">
-   <tabs>
-      <Tab fx:id="tReser" closable="false" text="Reservas">
-         <content>
-            <fx:include source="reservas-view.fxml" />
-         </content>
-      </Tab>
-      <Tab fx:id="tCalendarizacion" closable="false" text="Calendarizacion">
-         <content>
-            <fx:include source="calendarizacionRecursos-view.fxml" />
-         </content>
-      </Tab>
-      <Tab fx:id="tActividades" closable="false" text="Actividades">
-         <content>
-            <fx:include source="calendarizacionActividades-view.fxml" />
-         </content>
-      </Tab>
-      <Tab fx:id="tCharts" closable="false" text="Estadisticas">
-         <content>
-            <fx:include source="estadisticas-view.fxml" />
-         </content>
-      </Tab>
-   </tabs>
-</TabPane>
+<BorderPane prefHeight="630.0" prefWidth="1100.0"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+   <center>
+      <TabPane fx:id="tbpFuncionario" pickOnBounds="false" tabClosingPolicy="UNAVAILABLE">
+         <tabs>
+            <Tab fx:id="tReser" closable="false" text="Reservas"><content><fx:include source="reservas-view.fxml" /></content></Tab>
+            <Tab fx:id="tCalendarizacion" closable="false" text="Calendarizacion"><content><fx:include source="calendarizacionRecursos-view.fxml" /></content></Tab>
+            <Tab fx:id="tActividades" closable="false" text="Actividades"><content><fx:include source="calendarizacionActividades-view.fxml" /></content></Tab>
+            <Tab fx:id="tCharts" closable="false" text="Estadisticas"><content><fx:include source="estadisticas-view.fxml" /></content></Tab>
+         </tabs>
+      </TabPane>
+   </center>
+   <right>
+      <fx:include source="alertas-view.fxml" />
+   </right>
+</BorderPane>

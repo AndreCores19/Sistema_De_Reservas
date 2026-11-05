@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.layout.VBox?>
+
+<TitledPane text="Alertas" animated="false" collapsible="false"
+            xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="app.ui.AlertasViewController">
+    <content>
+        <VBox spacing="6.0" prefWidth="300.0">
+            <children>
+                <Label text="Reservas nuevas de otros clientes" wrapText="true" />
+                <TableView fx:id="tablaAlertas" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="columnaActividad" text="Actividad" prefWidth="125.0" />
+                        <TableColumn fx:id="columnaFecha" text="Fecha" prefWidth="80.0" />
+                        <TableColumn fx:id="columnaVer" text="Ver" prefWidth="50.0" />
+                        <TableColumn fx:id="columnaDescartar" text="Descartar" prefWidth="75.0" />
+                    </columns>
+                </TableView>
+            </children>
+        </VBox>
+    </content>
+</TitledPane>

@@ -2,39 +2,23 @@
 
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
-<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
 
-<TabPane fx:id="tbpAdminFuncionario" pickOnBounds="false" prefHeight="600.0" prefWidth="800.0" tabClosingPolicy="UNAVAILABLE" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1">
-   <tabs>
-      <Tab fx:id="tFunc" closable="false" text="Funcionarios">
-         <content>
-            <fx:include source="funcionariosAdmin-view.fxml" />
-         </content>
-      </Tab>
-      <Tab fx:id="tCat" closable="false" text="Categorias">
-         <content>
-            <fx:include source="categoriaAdmin-view.fxml" />
-         </content>
-      </Tab>
-      <Tab fx:id="tRecur" closable="false" text="Recursos">
-         <content>
-            <fx:include source="recursosAdmin-view.fxml" />
-         </content>
-      </Tab>
-      <Tab closable="false" text="Calendarizacion">
-         <content>
-            <fx:include source="calendarizacionRecursos-view.fxml" />
-         </content>
-      </Tab>
-      <Tab closable="false" text="Actividades">
-         <content>
-            <fx:include source="calendarizacionActividades-view.fxml" />
-         </content>
-      </Tab>
-      <Tab fx:id="tCharts" closable="false" text="Estadisticas">
-         <content>
-            <fx:include source="estadisticas-view.fxml" />
-         </content>
-      </Tab>
-   </tabs>
-</TabPane>
+<BorderPane prefHeight="600.0" prefWidth="1100.0"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+   <center>
+      <TabPane fx:id="tbpAdminFuncionario" pickOnBounds="false" tabClosingPolicy="UNAVAILABLE">
+         <tabs>
+            <Tab fx:id="tFunc" closable="false" text="Funcionarios"><content><fx:include source="funcionariosAdmin-view.fxml" /></content></Tab>
+            <Tab fx:id="tCat" closable="false" text="Categorias"><content><fx:include source="categoriaAdmin-view.fxml" /></content></Tab>
+            <Tab fx:id="tRecur" closable="false" text="Recursos"><content><fx:include source="recursosAdmin-view.fxml" /></content></Tab>
+            <Tab closable="false" text="Calendarizacion"><content><fx:include source="calendarizacionRecursos-view.fxml" /></content></Tab>
+            <Tab closable="false" text="Actividades"><content><fx:include source="calendarizacionActividades-view.fxml" /></content></Tab>
+            <Tab fx:id="tCharts" closable="false" text="Estadisticas"><content><fx:include source="estadisticas-view.fxml" /></content></Tab>
+         </tabs>
+      </TabPane>
+   </center>
+   <right>
+      <fx:include source="alertas-view.fxml" />
+   </right>
+</BorderPane>
