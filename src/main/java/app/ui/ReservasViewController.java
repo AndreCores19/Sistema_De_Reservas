@@ -9,7 +9,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 
-import app.Servicios.ServicioReservas;
+import app.Servicios.ServicioReservasCliente;
 import app.Servicios.ServicioCategoria;
 import app.Servicios.ServicioGemini;
 import app.Servicios.ServicioImpresion;
@@ -47,7 +47,7 @@ public class ReservasViewController {
     @FXML private TableColumn <ReservaDTO,String> tcReservasEstado;
     @FXML private Button btnImprimirReservas;
 
-    private final ServicioReservas servicioReservas = new ServicioReservas();
+    private final ServicioReservasCliente servicioReservas = new ServicioReservasCliente();
     private final ServicioCategoria servicioCategoria = new ServicioCategoria();
     private final ServicioImpresion servicioImpresion = new ServicioImpresion();
     private String idFuncionarioActual;
