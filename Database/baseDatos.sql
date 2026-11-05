@@ -1,7 +1,7 @@
 DROP DATABASE IF EXISTS sistema_reservas;
 CREATE DATABASE IF NOT EXISTS sistema_reservas;
 USE sistema_reservas;
-CREATE TABLE IF NOT EXISTS usuarios (
+CREATE TABLE IF NOT EXISTS usuario (
     id        VARCHAR(15)  NOT NULL,
     clave     VARCHAR(255)  NOT NULL,
     rol       VARCHAR(15)  NOT NULL,
@@ -10,19 +10,19 @@ CREATE TABLE IF NOT EXISTS usuarios (
     PRIMARY KEY (id),
     CHECK (rol IN ('ADMIN', 'FUNCIONARIO'))
 );
-CREATE TABLE IF NOT EXISTS categorias (
+CREATE TABLE IF NOT EXISTS categoria (
     id           VARCHAR(10)  NOT NULL,
     descripcion  VARCHAR(100) NOT NULL,
     PRIMARY KEY (id)
 );
-CREATE TABLE IF NOT EXISTS recursos (
+CREATE TABLE IF NOT EXISTS recurso (
     num_activo    VARCHAR(20)  NOT NULL,
     id_categoria  VARCHAR(10)  NOT NULL,
     descripcion   VARCHAR(100) NOT NULL,
     PRIMARY KEY (num_activo),
-    FOREIGN KEY (id_categoria) REFERENCES categorias(id)
+    FOREIGN KEY (id_categoria) REFERENCES categoria(id)
 );
-CREATE TABLE IF NOT EXISTS reservas (
+CREATE TABLE IF NOT EXISTS reserva (
     id_reserva      VARCHAR(10)  NOT NULL,
     actividad       VARCHAR(100) NOT NULL,
     fecha           DATE         NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS reservas (
     id_funcionario  VARCHAR(15)  NOT NULL,
     estado          VARCHAR(15)  NOT NULL,
     PRIMARY KEY (id_reserva),
-    FOREIGN KEY (id_funcionario) REFERENCES usuarios(id),
+    FOREIGN KEY (id_funcionario) REFERENCES usuario(id),
     CHECK (estado IN ('ACTIVA', 'CANCELADA')),
     CHECK (hora_fin > hora_inicio)
 );
@@ -39,27 +39,27 @@ CREATE TABLE IF NOT EXISTS reserva_categoria (
     id_reserva    VARCHAR(10) NOT NULL,
     id_categoria  VARCHAR(10) NOT NULL,
     PRIMARY KEY (id_reserva, id_categoria),
-    FOREIGN KEY (id_reserva) REFERENCES reservas(id_reserva) ON DELETE CASCADE,
-    FOREIGN KEY (id_categoria) REFERENCES categorias(id)
+    FOREIGN KEY (id_reserva) REFERENCES reserva(id_reserva) ON DELETE CASCADE,
+    FOREIGN KEY (id_categoria) REFERENCES categoria(id)
 );
 CREATE TABLE IF NOT EXISTS reserva_recurso (
     id_reserva  VARCHAR(10) NOT NULL,
     num_activo  VARCHAR(15) NOT NULL,
     PRIMARY KEY (id_reserva, num_activo),
-    FOREIGN KEY (id_reserva) REFERENCES reservas(id_reserva) ON DELETE CASCADE,
-    FOREIGN KEY (num_activo) REFERENCES recursos(num_activo)
+    FOREIGN KEY (id_reserva) REFERENCES reserva(id_reserva) ON DELETE CASCADE,
+    FOREIGN KEY (num_activo) REFERENCES recurso(num_activo)
 );
-INSERT INTO usuarios (id, clave, rol, nombre, telefono) VALUES
+INSERT INTO usuario (id, clave, rol, nombre, telefono) VALUES
     ('admin', 'hola123', 'ADMIN',       'Administrador Principal', NULL),
     ('111',   '111',     'FUNCIONARIO', 'Andrea Cordero',          '60032423'),
     ('222',   '222',     'FUNCIONARIO', 'Emily Benavides',         '72223694'),
     ('333',   '333',     'FUNCIONARIO', 'Jose Pablo Sanchez',      '85692541');
 
-INSERT INTO categorias (id, descripcion) VALUES
+INSERT INTO categoria (id, descripcion) VALUES
     ('CAT-000001', 'Sala para 10 personas'),
     ('CAT-000002', 'Laptop Windows 11'),
     ('CAT-000003', 'Proyector');
-INSERT INTO recursos (num_activo, id_categoria, descripcion) VALUES
+INSERT INTO recurso (num_activo, id_categoria, descripcion) VALUES
     ('34343',  'CAT-000001', 'Sala 1 primer piso'),
     ('283102', 'CAT-000001', 'Sala 2 primer piso'),
     ('111',    'CAT-000001', 'Sala 3 segundo piso'),
