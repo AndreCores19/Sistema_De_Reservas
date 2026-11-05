@@ -84,17 +84,19 @@ public class LogicaReservas {
     }
 
     public void cancelarReserva(String idReserva) throws Exception {
-        ReservaDTO reserva = reservaDatos.buscarPorId(idReserva);
-        if (reserva == null) {
-            throw new Exception("No se encontró la reserva con el ID proporcionado.");
+        synchronized (CANDADO_RESERVAS) {
+            ReservaDTO reserva = reservaDatos.buscarPorId(idReserva);
+            if (reserva == null) {
+                throw new Exception("No se encontró la reserva con el ID proporcionado.");
+            }
+            if ("CANCELADA".equals(reserva.getEstado())) {
+                throw new Exception("La reserva ya está cancelada.");
+            }
+            if (!esFechaFutura(reserva.getFecha(), reserva.getHoraInicio())) {
+                throw new Exception("No se puede cancelar una reserva pasada.");
+            }
+            reservaDatos.actualizarEstado(idReserva, "CANCELADA");
         }
-        if ("CANCELADA".equals(reserva.getEstado())) {
-            throw new Exception("La reserva ya está cancelada.");
-        }
-        if (!esFechaFutura(reserva.getFecha(), reserva.getHoraInicio())) {
-            throw new Exception("No se puede cancelar una reserva pasada.");
-        }
-        reservaDatos.actualizarEstado(idReserva, "CANCELADA");
     }
 
     private void validarReserva(ReservaDTO reserva) throws Exception {
@@ -116,6 +118,8 @@ public class LogicaReservas {
         if (reserva.getIdFuncionario() == null || reserva.getIdFuncionario().trim().isEmpty()) {
             throw new Exception("La reserva debe tener un funcionario.");
         }
+
+        new FuncionarioLogica().buscarPorId(reserva.getIdFuncionario());
         if (!esFechaFutura(reserva.getFecha(), reserva.getHoraInicio())) {
             throw new Exception("La fecha y hora de la reserva deben ser futuras.");
         }
