@@ -20,11 +20,6 @@ public class RecursoLogica {
         this.reservaLogica = new LogicaReservas();
     }
 
-    @Deprecated
-    public RecursoLogica(String rutaArchivo) {
-        this();
-    }
-
     public List<RecursoDTO> listarTodos() {
         try {
             return datos.listarTodos();

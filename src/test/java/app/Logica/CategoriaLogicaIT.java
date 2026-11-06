@@ -1,94 +1,99 @@
 package app.Logica;
 
 import app.DTO.CategoriaDTO;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.sql.SQLException;
 import java.util.List;
 
+import static app.DatosDePrueba.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CategoriaLogicaIT {
 
-    private CategoriaLogica categoriaLogica;
+    private final CategoriaLogica logica = new CategoriaLogica();
 
     @BeforeEach
-    void setUp() {
-        categoriaLogica = new CategoriaLogica("src/test/resources/categorias_prueba.json");
+    void prepararDatos() throws SQLException {
+        app.DatosDePrueba.crear();
     }
 
-    // Tests de lectura: usan directamente el archivo fijo, sin @TempDir
+    @AfterEach
+    void borrarDatos() throws SQLException {
+        app.DatosDePrueba.borrar();
+    }
 
     @Test
-    void listarTodasDebeRetornarLasTresCategorias() {
-        List<CategoriaDTO> categorias = categoriaLogica.listarTodas();
-        assertEquals(3, categorias.size());
+    void listarTodasDebeIncluirLasCategoriasDePrueba() {
+        List<String> ids = logica.listarTodas().stream().map(CategoriaDTO::getId).toList();
+
+        assertTrue(ids.containsAll(List.of(CAT_SALAS, CAT_LAPTOPS, CAT_PROYECTORES, CAT_SIN_RECURSOS)));
     }
 
     @Test
     void buscarPorIdDebeEncontrarLaCategoriaCorrecta() throws Exception {
-        CategoriaDTO categoria = categoriaLogica.buscarPorId("CAT-000003");
-        assertEquals("Sala de Juntas", categoria.getDescripcion());
+        assertEquals("Prueba Salas", logica.buscarPorId(CAT_SALAS).getDescripcion());
     }
 
     @Test
     void buscarPorIdSiNoExisteDebeLanzarExcepcion() {
-        assertThrows(Exception.class, () -> categoriaLogica.buscarPorId("CAT-999999"));
+        Exception ex = assertThrows(Exception.class, () -> logica.buscarPorId("CAT-999990"));
+        assertEquals("No existe una categoría con id: CAT-999990", ex.getMessage());
     }
 
     @Test
-    void buscarPorDescripcionDebeEncontrarLasDosQueContienenSala() {
-        List<CategoriaDTO> resultado = categoriaLogica.buscarPorDescripcion("sala");
-        assertEquals(2, resultado.size());
-    }
+    void buscarPorDescripcionNoDebeDistinguirMayusculas() {
+        List<CategoriaDTO> resultado = logica.buscarPorDescripcion("PRUEBA SALAS");
 
-    // --- Tests de escritura: cada test trabaja sobre su propia copia temporal ---
-
-    @Test
-    void agregarDebeAsignarUnIdConFormatoCorrecto(@TempDir Path carpetaTemporal) throws Exception {
-        Path copia = carpetaTemporal.resolve("categorias.json");
-        Files.copy(Path.of("src/test/resources/categorias_prueba.json"), copia);
-        CategoriaLogica logicaDeEscritura = new CategoriaLogica(copia.toString());
-
-        CategoriaDTO nueva = new CategoriaDTO();
-        nueva.setDescripcion("Sala de prueba");
-        logicaDeEscritura.agregar(nueva);
-
-        assertEquals("CAT-000004", nueva.getId());
+        assertEquals(1, resultado.size());
+        assertEquals(CAT_SALAS, resultado.get(0).getId());
     }
 
     @Test
-    void agregarSiDescripcionEsVaciaDebeLanzarExcepcion() {
-        CategoriaDTO invalida = new CategoriaDTO();
-        invalida.setDescripcion("   ");
+    void agregarDebeAsignarUnIdConFormatoCorrectoYGuardarla() throws Exception {
+        CategoriaDTO nueva = new CategoriaDTO(null, "Prueba nueva");
 
-        assertThrows(Exception.class, () -> categoriaLogica.agregar(invalida));
+        logica.agregar(nueva);
+        try {
+            assertTrue(nueva.getId().matches("CAT-\\d{6}"));
+            assertEquals("Prueba nueva", logica.buscarPorId(nueva.getId()).getDescripcion());
+        } finally {
+            logica.eliminar(nueva.getId());
+        }
     }
 
     @Test
-    void modificarDebeActualizarLaDescripcion(@TempDir Path carpetaTemporal) throws Exception {
-        Path copia = carpetaTemporal.resolve("categorias.json");
-        Files.copy(Path.of("src/test/resources/categorias_prueba.json"), copia);
-        CategoriaLogica logicaDeEscritura = new CategoriaLogica(copia.toString());
+    void agregarSiLaDescripcionEsVaciaDebeLanzarExcepcion() {
+        Exception ex = assertThrows(Exception.class, () -> logica.agregar(new CategoriaDTO(null, "   ")));
+        assertEquals("La descripción no puede estar vacía.", ex.getMessage());
+    }
 
-        CategoriaDTO actualizada = new CategoriaDTO();
-        actualizada.setId("CAT-000001");
-        actualizada.setDescripcion("Sala renovada para 12 personas");
-        logicaDeEscritura.modificar(actualizada);
+    @Test
+    void modificarDebeActualizarLaDescripcion() throws Exception {
+        logica.modificar(new CategoriaDTO(CAT_SALAS, "Salas renovadas"));
 
-        CategoriaDTO verificacion = logicaDeEscritura.buscarPorId("CAT-000001");
-        assertEquals("Sala renovada para 12 personas", verificacion.getDescripcion());
+        assertEquals("Salas renovadas", logica.buscarPorId(CAT_SALAS).getDescripcion());
     }
 
     @Test
     void modificarSiElIdNoExisteDebeLanzarExcepcion() {
-        CategoriaDTO inexistente = new CategoriaDTO();
-        inexistente.setId("CAT-999999");
-        inexistente.setDescripcion("No importa");
+        Exception ex = assertThrows(Exception.class,
+                () -> logica.modificar(new CategoriaDTO("CAT-999990", "No importa")));
+        assertEquals("No existe una categoría con ese id.", ex.getMessage());
+    }
 
-        assertThrows(Exception.class, () -> categoriaLogica.modificar(inexistente));
+    @Test
+    void eliminarUnaCategoriaConRecursosDebeLanzarExcepcion() {
+        Exception ex = assertThrows(Exception.class, () -> logica.eliminar(CAT_SALAS));
+        assertEquals("No se puede eliminar: la categoría tiene recursos asociados.", ex.getMessage());
+    }
+
+    @Test
+    void eliminarUnaCategoriaSinRecursosDebeBorrarla() throws Exception {
+        logica.eliminar(CAT_SIN_RECURSOS);
+
+        assertThrows(Exception.class, () -> logica.buscarPorId(CAT_SIN_RECURSOS));
     }
 }

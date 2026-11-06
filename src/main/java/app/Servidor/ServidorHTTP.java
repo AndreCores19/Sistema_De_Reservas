@@ -19,6 +19,7 @@ public class ServidorHTTP {
         servidor.createContext("/categorias", new CategoriaHandler());
         servidor.createContext("/recursos", new RecursoHandler());
         servidor.createContext("/funcionarios", new FuncionarioHandler());
+        servidor.createContext("/calendarizacion", new CalendarizacionHandler());
 
         // executor
         servidor.setExecutor(Executors.newFixedThreadPool(10));

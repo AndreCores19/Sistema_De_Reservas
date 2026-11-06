@@ -1,83 +1,64 @@
 package app.Servicios;
 
 import app.DTO.ResultadoEstadisticaDTO;
-import app.Logica.CategoriaLogica;
-import app.Logica.LogicaReservas;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate;
+import java.sql.SQLException;
 import java.util.List;
 
+import static app.DatosDePrueba.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-// los datos usados en este test se encuentran en reservas_prueba.json y categorias_prueba.json, ambos en src/test/resources
 class ServicioEstadisticasIT {
 
-    private ServicioEstadisticas servicioEstadisticas;
+    private final ServicioEstadisticas servicio = new ServicioEstadisticas();
 
     @BeforeEach
-    void setUp() {
-        LogicaReservas logicaReservasDePrueba = new LogicaReservas("src/test/resources/reservas_prueba.json");
-        CategoriaLogica categoriaLogicaDePrueba = new CategoriaLogica("src/test/resources/categorias_prueba.json");
-        servicioEstadisticas = new ServicioEstadisticas(logicaReservasDePrueba, categoriaLogicaDePrueba);
+    void prepararDatos() throws SQLException {
+        app.DatosDePrueba.crear();
+    }
+
+    @AfterEach
+    void borrarDatos() throws SQLException {
+        app.DatosDePrueba.borrar();
     }
 
     @Test
-    void obtenerEstadisticaRecursosDebeContarLasTresCategoriasConDosCadaUna() {
-        List<ResultadoEstadisticaDTO> resultado = servicioEstadisticas.obtenerEstadisticaRecursos(
-                LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 9));
+    void obtenerEstadisticaRecursosDebeContarCadaCategoriaSinLasCanceladas() {
+        List<ResultadoEstadisticaDTO> resultado = servicio.obtenerEstadisticaRecursos(LUNES, LUNES.plusDays(6));
 
+        // activas en la semana: una de proyectores, una de laptops y una de salas
+        // (la de laptops cancelada no cuenta)
         assertEquals(3, resultado.size());
         for (ResultadoEstadisticaDTO r : resultado) {
-            assertEquals(2, r.getCantidad());
+            assertEquals(1, r.getCantidad());
         }
 
         List<String> etiquetas = resultado.stream().map(ResultadoEstadisticaDTO::getEtiqueta).toList();
-        assertTrue(etiquetas.contains("Sala para 10 personas")); // CAT-000001
-        assertTrue(etiquetas.contains("Laptop windows 11"));     // CAT-000002
-        assertTrue(etiquetas.contains("Sala de Juntas"));        // CAT-000003
+        assertTrue(etiquetas.containsAll(List.of("Prueba Salas", "Prueba Laptops", "Prueba Proyectores")));
         assertFalse(etiquetas.contains("Desconocida"));
     }
 
     @Test
-    void obtenerEstadisticaRecursosSiLaCategoriaNoExisteDebeMostrarDesconocida(@org.junit.jupiter.api.io.TempDir java.nio.file.Path carpetaTemporal) throws Exception {
-        java.nio.file.Path archivoReservas = carpetaTemporal.resolve("reservas.json");
-        java.nio.file.Files.writeString(archivoReservas, """
-                [
-                  {
-                    "idReserva": "RES-999999",
-                    "actividad": "Prueba",
-                    "fecha": "03/08/2026",
-                    "horaInicio": "09:00:00",
-                    "horaFin": "10:00:00",
-                    "idsCategoriaSolicitada": ["CAT-999999"],
-                    "idsRecursosAsignados": [],
-                    "idFuncionario": "111",
-                    "estado": "ACTIVA"
-                  }
-                ]
-                """);
-
-        ServicioEstadisticas servicio = new ServicioEstadisticas(
-                new LogicaReservas(archivoReservas.toString()),
-                new CategoriaLogica("src/test/resources/categorias_prueba.json"));
-
-        List<ResultadoEstadisticaDTO> resultado = servicio.obtenerEstadisticaRecursos(
-                LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 9));
+    void obtenerEstadisticaActividadesDebeAgruparLasReservasDeLaSemana() {
+        List<ResultadoEstadisticaDTO> resultado = servicio.obtenerEstadisticaActividades(LUNES, LUNES.plusDays(6));
 
         assertEquals(1, resultado.size());
-        assertEquals("Desconocida", resultado.get(0).getEtiqueta());
-        assertEquals(1, resultado.get(0).getCantidad());
+        assertEquals(LUNES.toString(), resultado.get(0).getEtiqueta());
+        assertEquals(3, resultado.get(0).getCantidad());
     }
 
     @Test
-    void obtenerEstadisticaActividadesDebeAgruparLasCincoReservasEnUnaSolaSemana() {
-        List<ResultadoEstadisticaDTO> resultado = servicioEstadisticas.obtenerEstadisticaActividades(
-                LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 9));
+    void obtenerEstadisticaActividadesDebeSepararPorSemana() {
+        List<ResultadoEstadisticaDTO> resultado =
+                servicio.obtenerEstadisticaActividades(LUNES.minusDays(7), LUNES.plusDays(6));
 
-        assertEquals(1, resultado.size());
-        assertEquals("2026-08-03", resultado.get(0).getEtiqueta());
-        assertEquals(5, resultado.get(0).getCantidad());
+        assertEquals(2, resultado.size());
+        assertEquals(LUNES.minusDays(7).toString(), resultado.get(0).getEtiqueta());
+        assertEquals(1, resultado.get(0).getCantidad());
+        assertEquals(LUNES.toString(), resultado.get(1).getEtiqueta());
+        assertEquals(3, resultado.get(1).getCantidad());
     }
 }

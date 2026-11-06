@@ -24,11 +24,6 @@ public class LogicaReservas {
         this.categoriaLogica = new CategoriaLogica();
     }
 
-    @Deprecated
-    public LogicaReservas(String rutaReservas) {
-        this();
-    }
-
     public List<ReservaDTO> listarTodas() {
         try {
             return reservaDatos.listarTodas();
