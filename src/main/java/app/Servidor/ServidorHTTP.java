@@ -19,7 +19,7 @@ public class ServidorHTTP {
         servidor.createContext("/recursos", new RecursoHandler());
         servidor.createContext("/funcionarios", new FuncionarioHandler());
         servidor.createContext("/calendarizacion", new CalendarizacionHandler());
-        servidor.createContext("/reservas", new ReservasHandler());
+        servidor.createContext("/reserva", new ReservasHandler());
         servidor.createContext("/estadistica", new EstadisticasHandler());
 
         // executor
