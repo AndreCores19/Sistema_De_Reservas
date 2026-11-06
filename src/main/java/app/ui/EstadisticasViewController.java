@@ -3,7 +3,7 @@ package app.ui;
 import app.Controllers.SesionActual;
 import app.DTO.ResultadoEstadisticaDTO;
 import app.Servicios.ServicioGeneradorGrafico;
-import app.Servicios.ServicioEstadisticas;
+import app.Servicios.ServicioEstadisticasCliente;
 import app.Servicios.ServicioImpresion;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -39,7 +39,8 @@ public class EstadisticasViewController {
     @FXML private Button btnCerrarSesion;
 
 
-    private final ServicioEstadisticas servicioEstadisticas = new ServicioEstadisticas();
+
+    private final ServicioEstadisticasCliente servicioEstadisticas = new ServicioEstadisticasCliente();
     private final ServicioImpresion servicioImpresion = new ServicioImpresion();
     private final ServicioGeneradorGrafico servicioGeneradorGrafico = new ServicioGeneradorGrafico();
 
@@ -58,15 +59,22 @@ public class EstadisticasViewController {
         LocalDate desde = dteDesdeR.getValue();
         LocalDate hasta = dteHastaR.getValue();
 
-        List<ResultadoEstadisticaDTO> resultados = servicioEstadisticas.obtenerEstadisticaRecursos(desde, hasta);
-        if (resultados.isEmpty()) {
-            Alert alerta = new Alert(Alert.AlertType.INFORMATION, "No hay reservas en el rango de fechas seleccionado.");
-            alerta.showAndWait();
+        if (desde == null || hasta == null) {
+            new Alert(Alert.AlertType.WARNING, "Seleccione ambas fechas.").showAndWait();
             return;
         }
-        tblRecursos.setItems(FXCollections.observableArrayList(resultados));
-        imgGraficoR.setImage(servicioGeneradorGrafico.generar("Recursos Usados", "Categoría", "Cantidad", resultados));
 
+        try {
+            List<ResultadoEstadisticaDTO> resultados = servicioEstadisticas.obtenerEstadisticaRecursos(desde, hasta);
+            if (resultados.isEmpty()) {
+                new Alert(Alert.AlertType.INFORMATION, "No hay reservas en el rango de fechas seleccionado.").showAndWait();
+                return;
+            }
+            tblRecursos.setItems(FXCollections.observableArrayList(resultados));
+            imgGraficoR.setImage(servicioGeneradorGrafico.generar("Recursos Usados", "Categoría", "Cantidad", resultados));
+        } catch (Exception e) {
+            new Alert(Alert.AlertType.ERROR, e.getMessage()).showAndWait();
+        }
     }
 
     @FXML
@@ -74,16 +82,23 @@ public class EstadisticasViewController {
         LocalDate desde = dteDesdeA.getValue();
         LocalDate hasta = dteHastaA.getValue();
 
-        List<ResultadoEstadisticaDTO> resultados = servicioEstadisticas.obtenerEstadisticaActividades(desde, hasta);
-        if (resultados.isEmpty()) {
-            Alert alerta = new Alert(Alert.AlertType.INFORMATION, "No hay reservas en el rango de fechas seleccionado.");
-            alerta.showAndWait();
+        if (desde == null || hasta == null) {
+            new Alert(Alert.AlertType.WARNING, "Seleccione ambas fechas.").showAndWait();
             return;
         }
-        tblActividades.setItems(FXCollections.observableArrayList(resultados));
-        imgGraficoA.setImage(servicioGeneradorGrafico.generar("Actividades", "Semana", "Cantidad", resultados));
-    }
 
+        try {
+            List<ResultadoEstadisticaDTO> resultados = servicioEstadisticas.obtenerEstadisticaActividades(desde, hasta);
+            if (resultados.isEmpty()) {
+                new Alert(Alert.AlertType.INFORMATION, "No hay reservas en el rango de fechas seleccionado.").showAndWait();
+                return;
+            }
+            tblActividades.setItems(FXCollections.observableArrayList(resultados));
+            imgGraficoA.setImage(servicioGeneradorGrafico.generar("Actividades", "Semana", "Cantidad", resultados));
+        } catch (Exception e) {
+            new Alert(Alert.AlertType.ERROR, e.getMessage()).showAndWait();
+        }
+    }
     @FXML
     private void imprimirRecursos() {
         List<ResultadoEstadisticaDTO> resultados = new ArrayList<>(tblRecursos.getItems());
