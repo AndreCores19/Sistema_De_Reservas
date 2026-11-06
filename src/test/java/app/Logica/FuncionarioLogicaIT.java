@@ -24,7 +24,7 @@ class FuncionarioLogicaIT {
     @BeforeEach
     @AfterEach
     void borrarUsuariosDePrueba() throws SQLException {
-        String sql = "DELETE FROM usuarios WHERE id IN (?, ?, ?)";
+        String sql = "DELETE FROM usuario WHERE id IN (?, ?, ?)";
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
             sentencia.setString(1, ID_FUNCIONARIO);
@@ -35,7 +35,7 @@ class FuncionarioLogicaIT {
     }
 
     private void insertarAdministrador(String id) throws SQLException {
-        String sql = "INSERT INTO usuarios (id, clave, rol, nombre, telefono) VALUES (?, ?, 'ADMIN', 'Admin de prueba', NULL)";
+        String sql = "INSERT INTO usuario (id, clave, rol, nombre, telefono) VALUES (?, ?, 'ADMIN', 'Admin de prueba', NULL)";
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
             sentencia.setString(1, id);

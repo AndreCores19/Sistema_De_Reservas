@@ -29,19 +29,19 @@ class LogicaReservasIT {
     @BeforeEach
     void crearDatosDePrueba() throws SQLException {
         borrarDatosDePrueba();
-        ejecutar("INSERT INTO usuarios (id, clave, rol, nombre, telefono) VALUES (?, ?, 'FUNCIONARIO', 'Funcionario logica', '80000000')",
+        ejecutar("INSERT INTO usuario (id, clave, rol, nombre, telefono) VALUES (?, ?, 'FUNCIONARIO', 'Funcionario logica', '80000000')",
                 FUNCIONARIO, FUNCIONARIO);
-        ejecutar("INSERT INTO categorias (id, descripcion) VALUES (?, 'Categoria con un recurso')", CATEGORIA);
-        ejecutar("INSERT INTO recursos (num_activo, id_categoria, descripcion) VALUES (?, ?, 'Unico recurso')",
+        ejecutar("INSERT INTO categoria (id, descripcion) VALUES (?, 'Categoria con un recurso')", CATEGORIA);
+        ejecutar("INSERT INTO recurso (num_activo, id_categoria, descripcion) VALUES (?, ?, 'Unico recurso')",
                 RECURSO, CATEGORIA);
     }
 
     @AfterEach
     void borrarDatosDePrueba() throws SQLException {
-        ejecutar("DELETE FROM reservas WHERE id_funcionario = ?", FUNCIONARIO);
-        ejecutar("DELETE FROM recursos WHERE num_activo = ?", RECURSO);
-        ejecutar("DELETE FROM categorias WHERE id = ?", CATEGORIA);
-        ejecutar("DELETE FROM usuarios WHERE id = ?", FUNCIONARIO);
+        ejecutar("DELETE FROM reserva WHERE id_funcionario = ?", FUNCIONARIO);
+        ejecutar("DELETE FROM recurso WHERE num_activo = ?", RECURSO);
+        ejecutar("DELETE FROM categoria WHERE id = ?", CATEGORIA);
+        ejecutar("DELETE FROM usuario WHERE id = ?", FUNCIONARIO);
     }
 
     private void ejecutar(String sql, String... parametros) throws SQLException {

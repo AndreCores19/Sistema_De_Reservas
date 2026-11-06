@@ -12,7 +12,7 @@ import java.util.List;
 public class FuncionarioDatos {
 
     private static final String SELECT_BASE =
-            "SELECT id, clave, rol, nombre, telefono FROM usuarios WHERE rol = 'FUNCIONARIO' ";
+            "SELECT id, clave, rol, nombre, telefono FROM usuario WHERE rol = 'FUNCIONARIO' ";
 
     public List<FuncionarioDTO> listarTodos() throws SQLException {
         String sql = SELECT_BASE + "ORDER BY nombre";
@@ -65,7 +65,7 @@ public class FuncionarioDatos {
     }
 
     public boolean existeId(String id) throws SQLException {
-        String sql = "SELECT 1 FROM usuarios WHERE id = ?";
+        String sql = "SELECT 1 FROM usuario WHERE id = ?";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
@@ -79,7 +79,7 @@ public class FuncionarioDatos {
     }
 
     public void insertar(FuncionarioDTO funcionario) throws SQLException {
-        String sql = "INSERT INTO usuarios (id, clave, rol, nombre, telefono) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO usuario (id, clave, rol, nombre, telefono) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
@@ -95,7 +95,7 @@ public class FuncionarioDatos {
     }
 
     public boolean actualizar(FuncionarioDTO funcionario) throws SQLException {
-        String sql = "UPDATE usuarios SET nombre = ?, telefono = ? WHERE id = ? AND rol = 'FUNCIONARIO'";
+        String sql = "UPDATE usuario SET nombre = ?, telefono = ? WHERE id = ? AND rol = 'FUNCIONARIO'";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
@@ -109,7 +109,7 @@ public class FuncionarioDatos {
     }
 
     public boolean eliminar(String id) throws SQLException {
-        String sql = "DELETE FROM usuarios WHERE id = ? AND rol = 'FUNCIONARIO'";
+        String sql = "DELETE FROM usuario WHERE id = ? AND rol = 'FUNCIONARIO'";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {

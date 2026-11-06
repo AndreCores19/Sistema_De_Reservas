@@ -15,7 +15,7 @@ public class ReservaDatos {
 
     private static final String SELECT_BASE =
             "SELECT id_reserva, actividad, fecha, hora_inicio, hora_fin, id_funcionario, estado "
-                    + "FROM reservas ";
+                    + "FROM reserva ";
 
     private static final String ORDEN = "ORDER BY fecha, hora_inicio";
 
@@ -40,19 +40,19 @@ public class ReservaDatos {
     }
 
     public boolean tieneActivasPorFuncionario(String idFuncionario) throws SQLException {
-        String sql = "SELECT 1 FROM reservas WHERE id_funcionario = ? AND estado = 'ACTIVA' LIMIT 1";
+        String sql = "SELECT 1 FROM reserva WHERE id_funcionario = ? AND estado = 'ACTIVA' LIMIT 1";
         return existe(sql, idFuncionario);
     }
 
     public boolean tieneActivasPorRecurso(String numActivo) throws SQLException {
-        String sql = "SELECT 1 FROM reservas r "
+        String sql = "SELECT 1 FROM reserva r "
                 + "INNER JOIN reserva_recurso rr ON r.id_reserva = rr.id_reserva "
                 + "WHERE rr.num_activo = ? AND r.estado = 'ACTIVA' LIMIT 1";
         return existe(sql, numActivo);
     }
 
     public String obtenerUltimoId() throws SQLException {
-        String sql = "SELECT MAX(id_reserva) AS ultimo FROM reservas";
+        String sql = "SELECT MAX(id_reserva) AS ultimo FROM reserva";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql);
@@ -67,7 +67,7 @@ public class ReservaDatos {
 
 
     public void insertar(ReservaDTO reserva) throws SQLException {
-        String sqlReserva = "INSERT INTO reservas "
+        String sqlReserva = "INSERT INTO reserva "
                 + "(id_reserva, actividad, fecha, hora_inicio, hora_fin, id_funcionario, estado) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?)";
         String sqlCategoria = "INSERT INTO reserva_categoria (id_reserva, id_categoria) VALUES (?, ?)";
@@ -100,7 +100,7 @@ public class ReservaDatos {
     }
 
     public boolean actualizarEstado(String idReserva, String estado) throws SQLException {
-        String sql = "UPDATE reservas SET estado = ? WHERE id_reserva = ?";
+        String sql = "UPDATE reserva SET estado = ? WHERE id_reserva = ?";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {

@@ -15,6 +15,10 @@ public class ServidorHTTP {
 
         //registrar rutas
         servidor.createContext("/usuario", new UsuarioHandler());
+        servidor.createContext("/reserva", new ReservasHandler());
+        servidor.createContext("/categorias", new CategoriaHandler());
+        servidor.createContext("/recursos", new RecursoHandler());
+        servidor.createContext("/funcionarios", new FuncionarioHandler());
 
         // executor
         servidor.setExecutor(Executors.newFixedThreadPool(10));
