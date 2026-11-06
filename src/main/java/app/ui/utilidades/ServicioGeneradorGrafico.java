@@ -1,7 +1,6 @@
-package app.Servicios;
+package app.ui.utilidades;
 
 import app.DTO.ResultadoEstadisticaDTO;
-import app.Logica.GeneradorGraficoLogica;
 import javafx.scene.image.Image;
 
 import java.util.List;

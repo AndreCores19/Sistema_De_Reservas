@@ -1,4 +1,4 @@
-package app.Logica;
+package app.ui.utilidades;
 import app.DTO.ResultadoEstadisticaDTO;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;

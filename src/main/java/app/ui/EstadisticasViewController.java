@@ -2,9 +2,9 @@ package app.ui;
 
 import app.Controllers.SesionActual;
 import app.DTO.ResultadoEstadisticaDTO;
-import app.Servicios.ServicioGeneradorGrafico;
+import app.ui.utilidades.ServicioGeneradorGrafico;
 import app.Servicios.ServicioEstadisticasCliente;
-import app.Servicios.ServicioImpresion;
+import app.ui.utilidades.ServicioImpresion;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.DatePicker;
@@ -14,7 +14,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import java.awt.*;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;

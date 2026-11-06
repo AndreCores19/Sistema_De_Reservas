@@ -1,6 +1,7 @@
 package app.Logica;
 
 import app.DTO.ResultadoEstadisticaDTO;
+import app.ui.utilidades.GeneradorGraficoLogica;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

@@ -1,14 +1,11 @@
 package app.Servicios;
 
 import app.DTO.ReservaDTO;
-import app.Logica.LogicaReservas;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.List;
 
 public class ServicioReservasCliente extends ClienteBase {
-    private final LogicaReservas logicaReservas = new LogicaReservas();
-
     public void reservarEspacio(ReservaDTO reserva) throws Exception {
         enviarPostJson("/reserva/crear", reserva);
     }

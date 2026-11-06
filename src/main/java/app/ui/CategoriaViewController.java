@@ -1,8 +1,8 @@
 package app.ui;
 
 import app.DTO.CategoriaDTO;
-import app.Servicios.ServicioCategoria;
-import app.Servicios.ServicioImpresion;
+import app.Servicios.ServicioCategoriaCliente;
+import app.ui.utilidades.ServicioImpresion;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -30,7 +30,7 @@ public class CategoriaViewController {
     @FXML private TableColumn<CategoriaDTO, String> tcIDCateg;
     @FXML private TableColumn<CategoriaDTO, String> tcDesCateg;
 
-    private final ServicioCategoria servicioCategoria = new ServicioCategoria();
+    private final ServicioCategoriaCliente servicioCategoria = new ServicioCategoriaCliente();
     private final ServicioImpresion servicioImpresion = new ServicioImpresion();
     private final ObservableList<CategoriaDTO> datosTabla = FXCollections.observableArrayList();
 
@@ -102,9 +102,14 @@ public class CategoriaViewController {
         if (descripcion == null || descripcion.trim().isEmpty()) {
             return;
         }
-        List<CategoriaDTO> resultado = servicioCategoria.buscarPorDescripcion(descripcion);
-        for (CategoriaDTO c : resultado) {
-            agregarSiNoExiste(c);
+
+        try {
+            List<CategoriaDTO> resultado = servicioCategoria.buscarPorDescripcion(descripcion);
+            for (CategoriaDTO c : resultado) {
+                agregarSiNoExiste(c);
+            }
+        } catch (Exception e) {
+            new Alert(Alert.AlertType.ERROR, e.getMessage()).showAndWait();
         }
     }
 

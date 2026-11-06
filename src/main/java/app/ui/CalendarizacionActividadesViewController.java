@@ -1,8 +1,8 @@
 package app.ui;
 import app.Controllers.SesionActual;
 import app.DTO.CeldaActividadDTO;
-import app.Servicios.ServicioProgramacion;
-import app.Servicios.ServicioImpresion;
+import app.Servicios.ServicioProgramacionCliente;
+import app.ui.utilidades.ServicioImpresion;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -12,13 +12,12 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.Button;
 
-import java.awt.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CalendarizacionActividadesViewController {
-    private final ServicioProgramacion servicioProgramacion = new ServicioProgramacion();
+    private final ServicioProgramacionCliente servicioProgramacion = new ServicioProgramacionCliente();
     private final ServicioImpresion servicioImpresion = new ServicioImpresion();
 
     @FXML private TableView<FilaCalendario> tblCalendario;
@@ -52,26 +51,36 @@ public class CalendarizacionActividadesViewController {
     @FXML
     private void cargarCalendario() {
         LocalDate fechaReferencia = dteFechaReferencia.getValue();
-        CeldaActividadDTO[][] matriz = servicioProgramacion.matrizReservas(fechaReferencia);
 
-        List<FilaCalendario> filas = new ArrayList<>();
-
-        for (int hora = 0; hora < 24; hora++) {
-            FilaCalendario fila = new FilaCalendario();
-            fila.setHora(hora + ":00");
-
-            fila.setLunes(convertirCelda(matriz[hora][0]));
-            fila.setMartes(convertirCelda(matriz[hora][1]));
-            fila.setMiercoles(convertirCelda(matriz[hora][2]));
-            fila.setJueves(convertirCelda(matriz[hora][3]));
-            fila.setViernes(convertirCelda(matriz[hora][4]));
-            fila.setSabado(convertirCelda(matriz[hora][5]));
-            fila.setDomingo(convertirCelda(matriz[hora][6]));
-
-            filas.add(fila);
+        if (fechaReferencia == null) {
+            new Alert(Alert.AlertType.WARNING, "Seleccione una fecha de referencia.").showAndWait();
+            return;
         }
 
-        tblCalendario.setItems(FXCollections.observableArrayList(filas));
+        try {
+            CeldaActividadDTO[][] matriz = servicioProgramacion.matrizReservas(fechaReferencia);
+
+            List<FilaCalendario> filas = new ArrayList<>();
+
+            for (int hora = 0; hora < 24; hora++) {
+                FilaCalendario fila = new FilaCalendario();
+                fila.setHora(hora + ":00");
+
+                fila.setLunes(convertirCelda(matriz[hora][0]));
+                fila.setMartes(convertirCelda(matriz[hora][1]));
+                fila.setMiercoles(convertirCelda(matriz[hora][2]));
+                fila.setJueves(convertirCelda(matriz[hora][3]));
+                fila.setViernes(convertirCelda(matriz[hora][4]));
+                fila.setSabado(convertirCelda(matriz[hora][5]));
+                fila.setDomingo(convertirCelda(matriz[hora][6]));
+
+                filas.add(fila);
+            }
+
+            tblCalendario.setItems(FXCollections.observableArrayList(filas));
+        } catch (Exception e) {
+            new Alert(Alert.AlertType.ERROR, e.getMessage()).showAndWait();
+        }
     }
     private String convertirCelda(CeldaActividadDTO celda) {
         if (celda == null) {

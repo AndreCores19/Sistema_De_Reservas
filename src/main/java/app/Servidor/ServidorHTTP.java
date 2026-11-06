@@ -21,6 +21,7 @@ public class ServidorHTTP {
         servidor.createContext("/calendarizacion", new CalendarizacionHandler());
         servidor.createContext("/reserva", new ReservasHandler());
         servidor.createContext("/estadistica", new EstadisticasHandler());
+        servidor.createContext("/gemini", new GeminiHandler());
 
         // executor
         servidor.setExecutor(Executors.newFixedThreadPool(10));
