@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS categoria (
     PRIMARY KEY (id)
 );
 CREATE TABLE IF NOT EXISTS recurso (
-    num_activo    VARCHAR(20)  NOT NULL,
+    num_activo    VARCHAR(15)  NOT NULL,
     id_categoria  VARCHAR(10)  NOT NULL,
     descripcion   VARCHAR(100) NOT NULL,
     PRIMARY KEY (num_activo),
@@ -102,4 +102,3 @@ INSERT INTO reserva_recurso (id_reserva, num_activo) VALUES
 ##Para que todos tengamos el mismo user y contraseña
 CREATE USER IF NOT EXISTS 'reservas_app'@'localhost' IDENTIFIED BY 'Reservas2026!';
 GRANT ALL PRIVILEGES ON sistema_reservas.* TO 'reservas_app'@'localhost';
- 

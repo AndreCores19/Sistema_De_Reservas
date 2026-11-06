@@ -53,6 +53,9 @@ public class RecursoLogica {
         if (nuevo.getNumActivo() == null || nuevo.getNumActivo().trim().isEmpty()) {
             throw new Exception("El número de activo no puede estar vacío.");
         }
+        if (nuevo.getNumActivo().trim().length() > 15) {
+            throw new Exception("El número de activo no puede tener más de 15 caracteres.");
+        }
         validarDescripcionYCategoria(nuevo);
 
         if (datos.buscarPorNumActivo(nuevo.getNumActivo()) != null) {
