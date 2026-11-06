@@ -15,8 +15,8 @@ public class RecursoDatos {
     private static final String SELECT_BASE =
             "SELECT r.num_activo, r.descripcion, "
                     + "c.id AS id_categoria, c.descripcion AS descripcion_categoria "
-                    + "FROM recursos r "
-                    + "INNER JOIN categorias c ON r.id_categoria = c.id ";
+                    + "FROM recurso r "
+                    + "INNER JOIN categoria c ON r.id_categoria = c.id ";
 
     public List<RecursoDTO> listarTodos() throws SQLException {
         String sql = SELECT_BASE + "ORDER BY r.num_activo";
@@ -69,7 +69,7 @@ public class RecursoDatos {
     }
 
     public void insertar(RecursoDTO recurso) throws SQLException {
-        String sql = "INSERT INTO recursos (num_activo, id_categoria, descripcion) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO recurso (num_activo, id_categoria, descripcion) VALUES (?, ?, ?)";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
@@ -83,7 +83,7 @@ public class RecursoDatos {
     }
 
     public boolean actualizar(RecursoDTO recurso) throws SQLException {
-        String sql = "UPDATE recursos SET id_categoria = ?, descripcion = ? WHERE num_activo = ?";
+        String sql = "UPDATE recurso SET id_categoria = ?, descripcion = ? WHERE num_activo = ?";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
@@ -97,7 +97,7 @@ public class RecursoDatos {
     }
 
     public boolean eliminar(String numActivo) throws SQLException {
-        String sql = "DELETE FROM recursos WHERE num_activo = ?";
+        String sql = "DELETE FROM recurso WHERE num_activo = ?";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
