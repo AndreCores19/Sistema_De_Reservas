@@ -6,12 +6,19 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 
 import java.time.format.DateTimeFormatter;
 
@@ -20,7 +27,6 @@ public class AlertasViewController {
 
     @FXML private TableView<AlertaReservaDTO> tablaAlertas;
     @FXML private TableColumn<AlertaReservaDTO, String> columnaActividad;
-    @FXML private TableColumn<AlertaReservaDTO, String> columnaFecha;
     @FXML private TableColumn<AlertaReservaDTO, Void> columnaVer;
     @FXML private TableColumn<AlertaReservaDTO, Void> columnaDescartar;
 
@@ -29,10 +35,10 @@ public class AlertasViewController {
     @FXML
     private void initialize() {
         columnaActividad.setCellValueFactory(new PropertyValueFactory<>("actividad"));
-        columnaFecha.setCellValueFactory(alerta -> new SimpleStringProperty(alerta.getValue().getFecha() == null ? ""
-                : alerta.getValue().getFecha().toString()));
         configurarBoton(columnaVer, "Ver", this::verAlerta);
         configurarBoton(columnaDescartar, "Descartar", this::descartarAlerta);
+        tablaAlertas.setColumnResizePolicy(
+                TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         tablaAlertas.setItems(modelo.getAlertas());
     }
 
@@ -85,19 +91,41 @@ public class AlertasViewController {
                 ? "No indicado"
                 : alerta.getHoraInicio().format(FORMATO_HORA) + " - "
                 + alerta.getHoraFin().format(FORMATO_HORA);
-        String recursos = alerta.getRecursos() == null
-                ? "No indicados"
-                : String.join(", ", alerta.getRecursos());
-
-        Alert detalle = new Alert(Alert.AlertType.INFORMATION);
+        Stage detalle = new Stage();
         detalle.setTitle("Detalle de reserva");
-        detalle.setHeaderText(alerta.getActividad());
-        detalle.setContentText(
-                "Encargado: " + valor(alerta.getEncargado()) + "\n"
-                        + "Fecha: " + valor(alerta.getFecha()) + "\n"
-                        + "Horas: " + horario + "\n"
-                        + "Recursos: " + recursos
-        );
+        detalle.initModality(Modality.APPLICATION_MODAL);
+
+        Label titulo = new Label(valor(alerta.getActividad()));
+        titulo.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+
+        GridPane datos = new GridPane();
+        datos.setHgap(12);
+        datos.setVgap(8);
+        datos.add(new Label("Encargado:"), 0, 0);
+        datos.add(new Label(valor(alerta.getEncargado())), 1, 0);
+        datos.add(new Label("Fecha:"), 0, 1);
+        datos.add(new Label(valor(alerta.getFecha())), 1, 1);
+        datos.add(new Label("Horas:"), 0, 2);
+        datos.add(new Label(horario), 1, 2);
+        datos.add(new Label("Recursos:"), 0, 3);
+
+        ListView<String> listaRecursos = new ListView<>();
+        listaRecursos.getItems().setAll(alerta.getRecursos() == null
+                ? java.util.List.of("No indicados")
+                : alerta.getRecursos());
+        listaRecursos.setPrefHeight(100);
+        datos.add(listaRecursos, 1, 3);
+
+        Button cerrar = new Button("Cerrar");
+        cerrar.setOnAction(event -> detalle.close());
+
+        VBox contenido = new VBox(14, titulo, datos, cerrar);
+        contenido.setPadding(new Insets(16));
+        contenido.setMinWidth(360);
+        VBox.setMargin(cerrar, new Insets(4, 0, 0, 0));
+
+        detalle.setScene(new Scene(contenido));
+        detalle.setResizable(false);
         detalle.showAndWait();
     }
 

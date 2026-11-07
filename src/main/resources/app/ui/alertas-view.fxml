@@ -1,28 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TitledPane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
 
-<TitledPane text="Alertas" animated="false" collapsible="false"
-            xmlns="http://javafx.com/javafx/21"
+<TitledPane fx:id="tltAlertas" animated="false" collapsible="false"
+            contentDisplay="CENTER" text="Alertas"
+            minWidth="210.0" maxWidth="1.7976931348623157E308"
+            minHeight="400.0" maxHeight="1.7976931348623157E308"
+            xmlns="http://javafx.com/javafx/26"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="app.ui.AlertasViewController">
     <content>
-        <VBox spacing="6.0" prefWidth="300.0">
+        <VBox fx:id="vboxAlertas" spacing="10.0" fillWidth="true"
+              minWidth="210.0" maxWidth="1.7976931348623157E308"
+              maxHeight="1.7976931348623157E308"
+              style="-fx-background-color: -fx-control-inner-background;">
             <children>
-                <Label text="Reservas nuevas de otros clientes" wrapText="true" />
-                <TableView fx:id="tablaAlertas" VBox.vgrow="ALWAYS">
+                <TableView fx:id="tablaAlertas"
+                           minHeight="120.0"
+                           prefHeight="600.0"
+                           maxWidth="1.7976931348623157E308"
+                           VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="columnaActividad" text="Actividad" prefWidth="125.0" />
-                        <TableColumn fx:id="columnaFecha" text="Fecha" prefWidth="80.0" />
-                        <TableColumn fx:id="columnaVer" text="Ver" prefWidth="50.0" />
-                        <TableColumn fx:id="columnaDescartar" text="Descartar" prefWidth="75.0" />
+                        <TableColumn fx:id="columnaActividad" text="Actividad"
+                                     prefWidth="125.0" minWidth="80.0" />
+                        <TableColumn fx:id="columnaVer" text="Ver"
+                                     prefWidth="55.0" minWidth="45.0" maxWidth="70.0" />
+                        <TableColumn fx:id="columnaDescartar" text="Descartar"
+                                     prefWidth="90.0" minWidth="75.0" />
                     </columns>
+                    <placeholder>
+                        <Label text="No hay alertas nuevas." />
+                    </placeholder>
                 </TableView>
             </children>
+            <padding>
+                <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+            </padding>
         </VBox>
     </content>
 </TitledPane>
