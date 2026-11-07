@@ -8,10 +8,10 @@ public final class RangoFechas {
 
     public static String validar(LocalDate desde, LocalDate hasta) {
         if (desde == null || hasta == null) {
-            return "Debe seleccionar las fechas desde y hasta.";
+            return "Debe seleccionar las fechas inicial y final.";
         }
         if (desde.isAfter(hasta)) {
-            return "La fecha desde no puede ser posterior a la fecha hasta.";
+            return "La fecha inicial seleccionada no puede ser posterior a la fecha final seleccionada.";
         }
         return null;
     }
