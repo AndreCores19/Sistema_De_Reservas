@@ -15,11 +15,6 @@ public class CategoriaLogica {
         this.datos = new CategoriaDatos();
     }
 
-    @Deprecated
-    public CategoriaLogica(String rutaArchivo) {
-        this();
-    }
-
     public List<CategoriaDTO> listarTodas() {
         try {
             return datos.listarTodas();

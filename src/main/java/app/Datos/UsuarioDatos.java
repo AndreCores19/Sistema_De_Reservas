@@ -12,7 +12,7 @@ import java.sql.SQLException;
 public class UsuarioDatos {
 
     public UsuarioDTO buscarPorId(String id) throws SQLException {
-        String sql = "SELECT id, clave, rol, nombre, telefono FROM usuarios WHERE id = ?";
+        String sql = "SELECT id, clave, rol, nombre, telefono FROM usuario WHERE id = ?";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
@@ -29,7 +29,7 @@ public class UsuarioDatos {
     }
 
     public boolean actualizarClave(String id, String claveNueva) throws SQLException {
-        String sql = "UPDATE usuarios SET clave = ? WHERE id = ?";
+        String sql = "UPDATE usuario SET clave = ? WHERE id = ?";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {

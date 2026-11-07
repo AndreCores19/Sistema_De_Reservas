@@ -1,5 +1,6 @@
 package app.Logica;
 
+import app.ui.utilidades.GeneradorReportePDFLogica;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor;

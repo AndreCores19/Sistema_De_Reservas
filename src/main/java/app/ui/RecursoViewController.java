@@ -3,9 +3,9 @@ package app.ui;
 import app.Controllers.SesionActual;
 import app.DTO.CategoriaDTO;
 import app.DTO.RecursoDTO;
-import app.Servicios.ServicioCategoria;
-import app.Servicios.ServicioRecurso;
-import app.Servicios.ServicioImpresion;
+import app.Servicios.ServicioCategoriaCliente;
+import app.Servicios.ServicioRecursoCliente;
+import app.ui.utilidades.ServicioImpresion;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -36,8 +36,8 @@ public class RecursoViewController {
     @FXML private TableColumn<RecursoDTO, String> tccategRecur;
     @FXML private TableColumn<RecursoDTO, String> tcDesRecur;
 
-    private final ServicioRecurso servicioRecurso = new ServicioRecurso();
-    private final ServicioCategoria servicioCategoria = new ServicioCategoria();
+    private final ServicioRecursoCliente servicioRecurso = new ServicioRecursoCliente();
+    private final ServicioCategoriaCliente servicioCategoria = new ServicioCategoriaCliente();
     private final ServicioImpresion servicioImpresion = new ServicioImpresion();
     private final ObservableList<RecursoDTO> datosTabla = FXCollections.observableArrayList();
 
@@ -85,10 +85,14 @@ public class RecursoViewController {
     }
 
     private void cargarCategoriasEnCombos() {
-        List<CategoriaDTO> categorias = servicioCategoria.listarTodas();
-        ObservableList<CategoriaDTO> observable = FXCollections.observableArrayList(categorias);
-        CombBRecur.setItems(observable);
-        CombRecur.setItems(observable);
+        try {
+            List<CategoriaDTO> categorias = servicioCategoria.listarTodas();
+            ObservableList<CategoriaDTO> observable = FXCollections.observableArrayList(categorias);
+            CombBRecur.setItems(observable);
+            CombRecur.setItems(observable);
+        } catch (Exception e) {
+            mostrarError(e.getMessage());
+        }
     }
 
     private void guardar() {
@@ -146,18 +150,22 @@ public class RecursoViewController {
         CategoriaDTO categoriaFiltro = CombBRecur.getValue();
         String descripcion = txtFieldDescRecur.getText();
 
-        List<RecursoDTO> resultado;
-        if (categoriaFiltro != null) {
-            resultado = servicioRecurso.filtrarPorCategoria(categoriaFiltro.getId());
-        } else {
-            resultado = servicioRecurso.listarTodos();
-        }
-
-        for (RecursoDTO r : resultado) {
-            if (descripcion == null || descripcion.trim().isEmpty()
-                    || r.getDescripcion().toLowerCase().contains(descripcion.toLowerCase())) {
-                agregarSiNoExiste(r);
+        try {
+            List<RecursoDTO> resultado;
+            if (categoriaFiltro != null) {
+                resultado = servicioRecurso.filtrarPorCategoria(categoriaFiltro.getId());
+            } else {
+                resultado = servicioRecurso.listarTodos();
             }
+
+            for (RecursoDTO r : resultado) {
+                if (descripcion == null || descripcion.trim().isEmpty()
+                        || r.getDescripcion().toLowerCase().contains(descripcion.toLowerCase())) {
+                    agregarSiNoExiste(r);
+                }
+            }
+        } catch (Exception e) {
+            mostrarError(e.getMessage());
         }
     }
 

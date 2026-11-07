@@ -29,12 +29,8 @@ El `javafx-maven-plugin` usa `app.App` como clase principal. También existen `a
 
 La aplicación usa rutas relativas como `Data/reservas.json`; por eso debe iniciarse con la raíz del proyecto como directorio de trabajo.
 
-Para habilitar la función de IA, configurar la variable de entorno antes de iniciar la aplicación:
+Para la función de IA, definir la variable de entorno GEMINI_API_KEY antes de iniciar el servidor.
 
-```powershell
-$env:GEMINI_API_KEY = "SU_CLAVE"
-mvn javafx:run
-```
 
 La clave no está incluida en el repositorio.
 

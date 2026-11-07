@@ -2,12 +2,12 @@ package app.ui;
 
 import app.Controllers.SesionActual;
 import app.DTO.RecursoDTO;
-import app.Servicios.ServicioRecurso;
+import app.Servicios.ServicioRecursoCliente;
 import app.DTO.CategoriaDTO;
 import app.DTO.MatrizDTO;
-import app.Servicios.ServicioCalendarizacionRecursos;
-import app.Servicios.ServicioCategoria;
-import app.Servicios.ServicioImpresion;
+import app.Servicios.ServicioCalendarizacionRecursosCliente;
+import app.Servicios.ServicioCategoriaCliente;
+import app.ui.utilidades.ServicioImpresion;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -19,6 +19,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 public class CalendarizacionRecursosViewController {
@@ -32,16 +33,23 @@ public class CalendarizacionRecursosViewController {
     @FXML private TableView<MatrizDTO> tvCalendarizacion;
     @FXML private TableColumn<MatrizDTO, String> tcHora;
 
-    private final ServicioCalendarizacionRecursos servicioCalendarizacion = new ServicioCalendarizacionRecursos();
-    private final ServicioCategoria servicioCategoria = new ServicioCategoria();
+    private final ServicioCalendarizacionRecursosCliente servicioCalendarizacion = new ServicioCalendarizacionRecursosCliente();
+    private final ServicioCategoriaCliente servicioCategoria = new ServicioCategoriaCliente();
     private final ServicioImpresion servicioImpresion = new ServicioImpresion();
-    private final ServicioRecurso servicioRecurso = new ServicioRecurso();
+    private final ServicioRecursoCliente servicioRecurso = new ServicioRecursoCliente();
 
     @FXML
     public void initialize() {
         tcHora.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("hora"));
 
-        List<CategoriaDTO> categorias = servicioCategoria.listarTodas();
+        List<CategoriaDTO> categorias;
+        try {
+            categorias = servicioCategoria.listarTodas();
+        } catch (Exception e) {
+            mostrarError("No se pudieron cargar las categorías: " + e.getMessage());
+            categorias = new ArrayList<>();
+        }
+
         cbxCategoria.setItems(FXCollections.observableArrayList(categorias));
         cbxCategoria.setCellFactory(cb -> new javafx.scene.control.ListCell<>() {
             @Override
@@ -49,16 +57,17 @@ public class CalendarizacionRecursosViewController {
                 super.updateItem(item, empty);
                 setText(empty || item == null ? null : item.getDescripcion());
             }
-
         });
         cbxCategoria.setButtonCell(cbxCategoria.getCellFactory().call(null));
         btnCerrarSesion.setOnAction(event -> cerrarSesion(event));
         btnCargarFiltros.setOnAction(event -> cargarMatriz());
-        btnImprimirEnFiltros.setOnAction(event -> {try {
-            imprimirMatriz();
-        } catch (Exception e) {
-            mostrarError("Error al imprimir la matriz: " + e.getMessage());
-        }});
+        btnImprimirEnFiltros.setOnAction(event -> {
+            try {
+                imprimirMatriz();
+            } catch (Exception e) {
+                mostrarError("Error al imprimir la matriz: " + e.getMessage());
+            }
+        });
     }
 
     private void cargarMatriz() {
@@ -71,17 +80,26 @@ public class CalendarizacionRecursosViewController {
         }
         try {
             List<MatrizDTO> filas = servicioCalendarizacion.obtenerMatrizDeRecursos(categoria.getId(), fecha);
-            construirColumnas(categoria);
+            if (!construirColumnas(categoria)) {
+                return;
+            }
             tvCalendarizacion.setItems(FXCollections.observableArrayList(filas));
         } catch (Exception e) {
             mostrarError("Error al cargar la matriz: " + e.getMessage());
         }
     }
 
-    private void construirColumnas(CategoriaDTO categoria) {
+    private boolean construirColumnas(CategoriaDTO categoria) {
         tvCalendarizacion.getColumns().setAll(tcHora);
 
-        List<RecursoDTO> recursosDeCategoria = servicioRecurso.filtrarPorCategoria(categoria.getId());
+        List<RecursoDTO> recursosDeCategoria;
+        try {
+            recursosDeCategoria = servicioRecurso.filtrarPorCategoria(categoria.getId());
+        } catch (Exception e) {
+            mostrarError("No se pudieron cargar los recursos: " + e.getMessage());
+            return false;
+        }
+
         for (var recurso : recursosDeCategoria) {
             TableColumn<MatrizDTO, String> columnaRecurso = new TableColumn<>(recurso.getDescripcion());
             String numActivo = recurso.getNumActivo();
@@ -89,8 +107,8 @@ public class CalendarizacionRecursosViewController {
 
             tvCalendarizacion.getColumns().add(columnaRecurso);
         }
+        return true;
     }
-
 
     private void mostrarError(String mensaje) {
         Alert alerta = new Alert(Alert.AlertType.ERROR);

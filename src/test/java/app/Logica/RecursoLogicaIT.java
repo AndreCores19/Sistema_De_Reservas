@@ -1,97 +1,131 @@
 package app.Logica;
 
+import app.DTO.CategoriaDTO;
 import app.DTO.RecursoDTO;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
+import java.sql.SQLException;
 
+import static app.DatosDePrueba.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class RecursoLogicaIT {
 
-    private static final String RUTA_PRUEBA = "src/test/resources/recursos_prueba.json";
-
-    private RecursoLogica recursoLogica;
+    private final RecursoLogica logica = new RecursoLogica();
 
     @BeforeEach
-    void setUp() {
-        recursoLogica = new RecursoLogica(RUTA_PRUEBA);
+    void prepararDatos() throws SQLException {
+        app.DatosDePrueba.crear();
+    }
+
+    @AfterEach
+    void borrarDatos() throws SQLException {
+        app.DatosDePrueba.borrar();
+    }
+
+    private RecursoDTO recurso(String numActivo, String idCategoria, String descripcion) {
+        CategoriaDTO categoria = idCategoria == null ? null : new CategoriaDTO(idCategoria, null);
+        return new RecursoDTO(numActivo, categoria, descripcion);
+    }
+
+
+    @Test
+    void filtrarPorCategoriaDebeEncontrarLasDosSalas() {
+        assertEquals(2, logica.filtrarPorCategoria(CAT_SALAS).size());
     }
 
     @Test
-    void listarTodosDebeRetornarLosCincoRecursos() {
-        List<RecursoDTO> recursos = recursoLogica.listarTodos();
-        assertEquals(5, recursos.size());
+    void filtrarPorCategoriaSinRecursosDebeRetornarVacio() {
+        assertTrue(logica.filtrarPorCategoria(CAT_SIN_RECURSOS).isEmpty());
     }
 
     @Test
-    void filtrarPorCategoriaDebeEncontrarLosDosDeCAT000001() {
-        List<RecursoDTO> recursos = recursoLogica.filtrarPorCategoria("CAT-000001");
-        assertEquals(2, recursos.size());
+    void buscarPorNumActivoDebeTraerLaCategoriaCompleta() throws Exception {
+        RecursoDTO encontrado = logica.buscarPorNumActivo(PROYECTOR);
+
+        assertEquals("Proyector de prueba", encontrado.getDescripcion());
+        assertEquals("Prueba Proyectores", encontrado.getCategoria().getDescripcion());
     }
 
     @Test
-    void filtrarPorCategoriaDebeRetornarVacioSiNoHayRecursosDeEsaCategoria() {
-        List<RecursoDTO> recursos = recursoLogica.filtrarPorCategoria("CAT-999999");
-        assertTrue(recursos.isEmpty());
+    void buscarPorNumActivoSiNoExisteDebeLanzarExcepcion() {
+        assertThrows(Exception.class, () -> logica.buscarPorNumActivo("D-NO-EXISTE"));
+    }
+
+
+    @Test
+    void agregarDebeGuardarElRecursoConSuCategoria() throws Exception {
+        logica.agregar(recurso("D-NUEVO-1", CAT_SALAS, "Recurso nuevo"));
+
+        assertEquals("Prueba Salas", logica.buscarPorNumActivo("D-NUEVO-1").getCategoria().getDescripcion());
     }
 
     @Test
-    void buscarPorNumActivoDebeEncontrarElRecursoCorrecto() throws Exception {
-        RecursoDTO recurso = recursoLogica.buscarPorNumActivo("452784");
-        assertEquals("Sala de juntas principal", recurso.getDescripcion());
+    void agregarSiElNumActivoEsVacioDebeLanzarExcepcion() {
+        Exception ex = assertThrows(Exception.class, () -> logica.agregar(recurso("   ", CAT_SALAS, "Algo")));
+        assertEquals("El número de activo no puede estar vacío.", ex.getMessage());
     }
 
     @Test
-    void buscarPorNumActivoDebeLanzarExcepcionSiNoExiste() {
-        assertThrows(Exception.class, () -> recursoLogica.buscarPorNumActivo("000000"));
+    void agregarSiElNumActivoEsMuyLargoDebeLanzarExcepcion() {
+        Exception ex = assertThrows(Exception.class,
+                () -> logica.agregar(recurso("D-12345678901234", CAT_SALAS, "Algo")));
+        assertEquals("El número de activo no puede tener más de 15 caracteres.", ex.getMessage());
     }
 
     @Test
-    void agregarDebeLanzarExcepcionSiNumActivoEsVacio() {
-        RecursoDTO invalido = new RecursoDTO();
-        invalido.setNumActivo("   ");
-        invalido.setDescripcion("Algo");
-
-        assertThrows(Exception.class, () -> recursoLogica.agregar(invalido));
+    void agregarSinCategoriaDebeLanzarExcepcion() {
+        Exception ex = assertThrows(Exception.class, () -> logica.agregar(recurso("D-NUEVO-1", null, "Algo")));
+        assertEquals("Debe seleccionar una categoría.", ex.getMessage());
     }
 
     @Test
-    void agregarDebeLanzarExcepcionSiNoTieneCategoria() {
-        RecursoDTO invalido = new RecursoDTO();
-        invalido.setNumActivo("999999");
-        invalido.setDescripcion("Algo");
-        invalido.setCategoria(null);
-
-        assertThrows(Exception.class, () -> recursoLogica.agregar(invalido));
+    void agregarConUnaCategoriaInexistenteDebeLanzarExcepcion() {
+        assertThrows(Exception.class, () -> logica.agregar(recurso("D-NUEVO-1", "CAT-999990", "Algo")));
     }
 
     @Test
-    void modificarDebeActualizarLaDescripcion(@TempDir Path carpetaTemporal) throws Exception {
-        Path copia = carpetaTemporal.resolve("recursos.json");
-        Files.copy(Path.of(RUTA_PRUEBA), copia);
-        RecursoLogica logicaDeEscritura = new RecursoLogica(copia.toString());
+    void agregarConUnNumActivoRepetidoDebeLanzarExcepcion() {
+        Exception ex = assertThrows(Exception.class, () -> logica.agregar(recurso(SALA_1, CAT_SALAS, "Repetido")));
+        assertEquals("Ya existe un recurso con ese número de activo.", ex.getMessage());
+    }
 
-        RecursoDTO actualizado = new RecursoDTO();
-        actualizado.setNumActivo("34343");
-        actualizado.setDescripcion("Sala 1 primer piso - remodelada");
-        logicaDeEscritura.modificar(actualizado);
 
-        RecursoDTO verificacion = logicaDeEscritura.buscarPorNumActivo("34343");
-        assertEquals("Sala 1 primer piso - remodelada", verificacion.getDescripcion());
+    @Test
+    void modificarDebeActualizarDescripcionYCategoria() throws Exception {
+        logica.modificar(recurso(SALA_2, CAT_LAPTOPS, "Sala convertida"));
+
+        RecursoDTO modificado = logica.buscarPorNumActivo(SALA_2);
+        assertEquals("Sala convertida", modificado.getDescripcion());
+        assertEquals(CAT_LAPTOPS, modificado.getCategoria().getId());
     }
 
     @Test
-    void modificarDebeLanzarExcepcionSiElNumActivoNoExiste() {
-        RecursoDTO inexistente = new RecursoDTO();
-        inexistente.setNumActivo("000000");
-        inexistente.setDescripcion("No importa");
-
-        assertThrows(Exception.class, () -> recursoLogica.modificar(inexistente));
+    void modificarSiNoExisteDebeLanzarExcepcion() {
+        Exception ex = assertThrows(Exception.class,
+                () -> logica.modificar(recurso("D-NO-EXISTE", CAT_SALAS, "Algo")));
+        assertEquals("No existe un recurso con ese número de activo.", ex.getMessage());
     }
 
+
+    @Test
+    void eliminarUnRecursoConReservasActivasDebeLanzarExcepcion() {
+        Exception ex = assertThrows(Exception.class, () -> logica.eliminar(SALA_1));
+        assertEquals("No se puede eliminar un recurso que tiene reservas activas.", ex.getMessage());
+    }
+
+    @Test
+    void eliminarUnRecursoConSoloReservasCanceladasDebeRespetarElHistorial() {
+        Exception ex = assertThrows(Exception.class, () -> logica.eliminar(LAPTOP_2));
+        assertEquals("No se puede eliminar: el recurso aparece en el historial de reservas.", ex.getMessage());
+    }
+
+    @Test
+    void eliminarUnRecursoSinReservasDebeBorrarlo() throws Exception {
+        logica.eliminar(SALA_2);
+
+        assertThrows(Exception.class, () -> logica.buscarPorNumActivo(SALA_2));
+    }
 }

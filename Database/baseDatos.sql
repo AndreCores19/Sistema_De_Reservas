@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS categoria (
     PRIMARY KEY (id)
 );
 CREATE TABLE IF NOT EXISTS recurso (
-    num_activo    VARCHAR(20)  NOT NULL,
+    num_activo    VARCHAR(15)  NOT NULL,
     id_categoria  VARCHAR(10)  NOT NULL,
     descripcion   VARCHAR(100) NOT NULL,
     PRIMARY KEY (num_activo),
@@ -67,7 +67,7 @@ INSERT INTO recurso (num_activo, id_categoria, descripcion) VALUES
     ('45238',  'CAT-000002', 'Laptop #45238'),
     ('452784', 'CAT-000003', 'Proyector Epson #452784'),
     ('1234',   'CAT-000003', 'Proyector #1234');
-INSERT INTO reservas (id_reserva, actividad, fecha, hora_inicio, hora_fin, id_funcionario, estado) VALUES
+INSERT INTO reserva (id_reserva, actividad, fecha, hora_inicio, hora_fin, id_funcionario, estado) VALUES
     ('RES-000001', 'Sesion de Junta Directiva',          '2026-08-03', '09:00:00', '11:00:00', '111', 'ACTIVA'),
     ('RES-000002', 'Charla tecnica',                     '2026-08-04', '08:00:00', '09:00:00', '222', 'ACTIVA'),
     ('RES-000003', 'Reunion de Control',                 '2026-08-05', '14:00:00', '16:00:00', '111', 'ACTIVA'),
@@ -102,4 +102,3 @@ INSERT INTO reserva_recurso (id_reserva, num_activo) VALUES
 ##Para que todos tengamos el mismo user y contraseña
 CREATE USER IF NOT EXISTS 'reservas_app'@'localhost' IDENTIFIED BY 'Reservas2026!';
 GRANT ALL PRIVILEGES ON sistema_reservas.* TO 'reservas_app'@'localhost';
- 

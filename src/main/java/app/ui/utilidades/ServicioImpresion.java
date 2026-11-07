@@ -1,7 +1,8 @@
-package app.Servicios;
+package app.ui.utilidades;
 
 import app.DTO.*;
-import app.Logica.ReporteLogica;
+import app.Servicios.ServicioPDF;
+
 import java.util.List;
 
 public class ServicioImpresion {

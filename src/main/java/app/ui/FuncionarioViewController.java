@@ -2,8 +2,8 @@ package app.ui;
 
 import app.Controllers.SesionActual;
 import app.DTO.FuncionarioDTO;
-import app.Servicios.ServicioFuncionario;
-import app.Servicios.ServicioImpresion;
+import app.Servicios.ServicioFuncionarioCliente;
+import app.ui.utilidades.ServicioImpresion;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -33,7 +33,7 @@ public class FuncionarioViewController {
     @FXML private TableColumn<FuncionarioDTO, String> tcNombFunc;
     @FXML private TableColumn<FuncionarioDTO, String> tcTelFunc;
 
-    private final ServicioFuncionario servicioFuncionario = new ServicioFuncionario();
+    private final ServicioFuncionarioCliente servicioFuncionario = new ServicioFuncionarioCliente();
     private final ServicioImpresion servicioImpresion = new ServicioImpresion();
     private final ObservableList<FuncionarioDTO> datosTabla = FXCollections.observableArrayList();
 
@@ -66,9 +66,13 @@ public class FuncionarioViewController {
     }
 
     private void cargarTabla() {
-        List<FuncionarioDTO> lista = servicioFuncionario.listarTodos();
-        datosTabla.setAll(lista);
-        tvFuncionarios.setItems(datosTabla);
+        try {
+            List<FuncionarioDTO> lista = servicioFuncionario.listarTodos();
+            datosTabla.setAll(lista);
+            tvFuncionarios.setItems(datosTabla);
+        } catch (Exception e) {
+            mostrarError(e.getMessage());
+        }
     }
 
     private void guardar() {
@@ -127,20 +131,20 @@ public class FuncionarioViewController {
         String id = txtFieldBusqID.getText();
         String nombre = txtFieldBusqNombre.getText();
 
-        if (!id.isEmpty()) {
-            try {
+        try {
+            if (!id.isEmpty()) {
                 FuncionarioDTO encontrado = servicioFuncionario.buscarPorId(id);
                 agregarSiNoExiste(encontrado);
-            } catch (Exception e) {
-                mostrarError(e.getMessage());
+            } else if (!nombre.isEmpty()) {
+                List<FuncionarioDTO> resultado = servicioFuncionario.buscarPorNombre(nombre);
+                for (FuncionarioDTO f : resultado) {
+                    agregarSiNoExiste(f);
+                }
+            } else {
+                cargarTabla();
             }
-        } else if (!nombre.isEmpty()) {
-            List<FuncionarioDTO> resultado = servicioFuncionario.buscarPorNombre(nombre);
-            for (FuncionarioDTO f : resultado) {
-                agregarSiNoExiste(f);
-            }
-        } else {
-            cargarTabla();
+        } catch (Exception e) {
+            mostrarError(e.getMessage());
         }
     }
 

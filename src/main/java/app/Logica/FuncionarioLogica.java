@@ -21,11 +21,6 @@ public class FuncionarioLogica {
         this.reservaLogica = new LogicaReservas();
     }
 
-    @Deprecated
-    public FuncionarioLogica(String rutaArchivo) {
-        this();
-    }
-
     public List<FuncionarioDTO> listarTodos() {
         try {
             return datos.listarTodos();

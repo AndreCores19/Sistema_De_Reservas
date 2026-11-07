@@ -10,11 +10,10 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 
 import app.Servicios.ServicioReservasCliente;
-import app.Servicios.ServicioCategoria;
-import app.Servicios.ServicioGemini;
-import app.Servicios.ServicioImpresion;
+import app.Servicios.ServicioCategoriaCliente;
+import app.Servicios.ServicioGeminiCliente;
+import app.ui.utilidades.ServicioImpresion;
 
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -48,9 +47,10 @@ public class ReservasViewController {
     @FXML private Button btnImprimirReservas;
 
     private final ServicioReservasCliente servicioReservas = new ServicioReservasCliente();
-    private final ServicioCategoria servicioCategoria = new ServicioCategoria();
+    private final ServicioCategoriaCliente servicioCategoria = new ServicioCategoriaCliente();
     private final ServicioImpresion servicioImpresion = new ServicioImpresion();
     private String idFuncionarioActual;
+    private final ServicioGeminiCliente servicioGemini = new ServicioGeminiCliente();
 
 
     @FXML
@@ -91,20 +91,19 @@ public class ReservasViewController {
             return;
         }
         try {
-            ExtraccionIADTO extraido = ServicioGemini.extraerDatosDeLaIA(frase);
+            ExtraccionIADTO extraido = servicioGemini.extraerDatosDeLaIA(frase);
             limpiarSeleccion();
             txtFActividad.setText(frase);
-            if(extraido.getActividad()!=null) txtFActividad.setText(extraido.getActividad());
-            if(extraido.getFecha()!=null) dpFecha.setValue(extraido.getFecha());
-            if(extraido.getHoraInicio()!=null) cbxHoraInicio.setValue(extraido.getHoraInicio().format(DateTimeFormatter.ofPattern("HH:mm")));
-            if(extraido.getHoraFin()!=null) cbxHoraFin.setValue(extraido.getHoraFin().format(DateTimeFormatter.ofPattern("HH:mm")));
+            if (extraido.getActividad() != null) txtFActividad.setText(extraido.getActividad());
+            if (extraido.getFecha() != null) dpFecha.setValue(extraido.getFecha());
+            if (extraido.getHoraInicio() != null) cbxHoraInicio.setValue(extraido.getHoraInicio().format(DateTimeFormatter.ofPattern("HH:mm")));
+            if (extraido.getHoraFin() != null) cbxHoraFin.setValue(extraido.getHoraFin().format(DateTimeFormatter.ofPattern("HH:mm")));
             seleccionarCategoriasSugeridas(extraido.getCategoriasSugeridas());
-        } catch (IOException | InterruptedException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             mostrarError("No se pudo interpretar la frase. Completa el formulario manualmente.");
         }
     }
-
     private void seleccionarCategoriasSugeridas(List<String> categoriasSugeridas) {
         if (categoriasSugeridas == null || categoriasSugeridas.isEmpty()) {
             return;
@@ -185,7 +184,14 @@ public class ReservasViewController {
     }
 
     private void cargarCategorias() {
-        List<CategoriaDTO> categorias = servicioCategoria.listarTodas();
+        List<CategoriaDTO> categorias;
+        try {
+            categorias = servicioCategoria.listarTodas();
+        } catch (Exception e) {
+            new Alert(Alert.AlertType.ERROR, e.getMessage()).showAndWait();
+            categorias = new ArrayList<>();
+        }
+
         ObservableList<CategoriaDTO> datosCategorias = FXCollections.observableArrayList(categorias);
         lvCategorias.setItems(datosCategorias);
         lvCategorias.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);

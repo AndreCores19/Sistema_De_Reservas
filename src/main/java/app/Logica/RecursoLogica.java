@@ -20,11 +20,6 @@ public class RecursoLogica {
         this.reservaLogica = new LogicaReservas();
     }
 
-    @Deprecated
-    public RecursoLogica(String rutaArchivo) {
-        this();
-    }
-
     public List<RecursoDTO> listarTodos() {
         try {
             return datos.listarTodos();
@@ -52,6 +47,9 @@ public class RecursoLogica {
     public void agregar(RecursoDTO nuevo) throws Exception {
         if (nuevo.getNumActivo() == null || nuevo.getNumActivo().trim().isEmpty()) {
             throw new Exception("El número de activo no puede estar vacío.");
+        }
+        if (nuevo.getNumActivo().trim().length() > 15) {
+            throw new Exception("El número de activo no puede tener más de 15 caracteres.");
         }
         validarDescripcionYCategoria(nuevo);
 

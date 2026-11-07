@@ -30,7 +30,7 @@ class UsuarioLogicaIT {
 
     @AfterEach
     void borrarUsuariosDePrueba() throws SQLException {
-        String sql = "DELETE FROM usuarios WHERE id IN (?, ?)";
+        String sql = "DELETE FROM usuario WHERE id IN (?, ?)";
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
             sentencia.setString(1, ID_ADMIN);
@@ -40,7 +40,7 @@ class UsuarioLogicaIT {
     }
 
     private void insertarUsuario(String id, String clave, String rol, String nombre, String telefono) throws SQLException {
-        String sql = "INSERT INTO usuarios (id, clave, rol, nombre, telefono) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO usuario (id, clave, rol, nombre, telefono) VALUES (?, ?, ?, ?, ?)";
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
             sentencia.setString(1, id);
@@ -99,30 +99,26 @@ class UsuarioLogicaIT {
 
     @Test
     void cambiarClaveDebeActualizarLaClaveEnLaBase() throws Exception {
-        UsuarioDTO usuario = logica.iniciarSesion(ID_FUNCIONARIO, "claveFunc");
+        logica.cambiarClave(ID_FUNCIONARIO, "claveFunc", "claveNueva");
 
-        logica.cambiarClave(usuario, "claveFunc", "claveNueva");
-
-        assertEquals("claveNueva", usuario.getClave());
         assertNotNull(logica.iniciarSesion(ID_FUNCIONARIO, "claveNueva"));
         assertThrows(Exception.class, () -> logica.iniciarSesion(ID_FUNCIONARIO, "claveFunc"));
     }
 
     @Test
-    void cambiarClaveSiLaClaveActualNoCoincideDebeLanzarException() throws Exception {
-        UsuarioDTO usuario = logica.iniciarSesion(ID_FUNCIONARIO, "claveFunc");
-
+    void cambiarClaveSiLaClaveActualNoCoincideDebeLanzarException() {
         Exception ex = assertThrows(Exception.class,
-                () -> logica.cambiarClave(usuario, "incorrecta", "claveNueva"));
-        assertEquals("La clave actual no coincide.", ex.getMessage());
+                () -> logica.cambiarClave(ID_FUNCIONARIO, "incorrecta", "claveNueva"));
+        assertEquals("El id o la clave son incorrectos.", ex.getMessage());
     }
 
     @Test
-    void cambiarClaveSiLaClaveNuevaEsVaciaDebeLanzarException() throws Exception {
-        UsuarioDTO usuario = logica.iniciarSesion(ID_FUNCIONARIO, "claveFunc");
-
+    void cambiarClaveSiLaClaveNuevaEsVaciaDebeLanzarException() {
         Exception ex = assertThrows(Exception.class,
-                () -> logica.cambiarClave(usuario, "claveFunc", ""));
+                () -> logica.cambiarClave(ID_FUNCIONARIO, "claveFunc", ""));
         assertEquals("La clave nueva no puede estar vacía.", ex.getMessage());
     }
 }
+
+
+

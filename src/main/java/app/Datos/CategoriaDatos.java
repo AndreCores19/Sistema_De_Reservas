@@ -12,7 +12,7 @@ import java.util.List;
 public class CategoriaDatos {
 
     public List<CategoriaDTO> listarTodas() throws SQLException {
-        String sql = "SELECT id, descripcion FROM categorias ORDER BY id";
+        String sql = "SELECT id, descripcion FROM categoria ORDER BY id";
         List<CategoriaDTO> categorias = new ArrayList<>();
 
         try (Connection conexion = ConexionBD.obtenerConexion();
@@ -27,7 +27,7 @@ public class CategoriaDatos {
     }
 
     public CategoriaDTO buscarPorId(String id) throws SQLException {
-        String sql = "SELECT id, descripcion FROM categorias WHERE id = ?";
+        String sql = "SELECT id, descripcion FROM categoria WHERE id = ?";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
@@ -44,7 +44,7 @@ public class CategoriaDatos {
     }
 
     public List<CategoriaDTO> buscarPorDescripcion(String texto) throws SQLException {
-        String sql = "SELECT id, descripcion FROM categorias WHERE descripcion LIKE ? ORDER BY id";
+        String sql = "SELECT id, descripcion FROM categoria WHERE descripcion LIKE ? ORDER BY id";
         List<CategoriaDTO> categorias = new ArrayList<>();
 
         try (Connection conexion = ConexionBD.obtenerConexion();
@@ -62,7 +62,7 @@ public class CategoriaDatos {
     }
 
     public void insertar(CategoriaDTO categoria) throws SQLException {
-        String sql = "INSERT INTO categorias (id, descripcion) VALUES (?, ?)";
+        String sql = "INSERT INTO categoria (id, descripcion) VALUES (?, ?)";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
@@ -75,7 +75,7 @@ public class CategoriaDatos {
     }
 
     public boolean actualizar(CategoriaDTO categoria) throws SQLException {
-        String sql = "UPDATE categorias SET descripcion = ? WHERE id = ?";
+        String sql = "UPDATE categoria SET descripcion = ? WHERE id = ?";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
@@ -88,7 +88,7 @@ public class CategoriaDatos {
     }
 
     public boolean eliminar(String id) throws SQLException {
-        String sql = "DELETE FROM categorias WHERE id = ?";
+        String sql = "DELETE FROM categoria WHERE id = ?";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
@@ -100,7 +100,7 @@ public class CategoriaDatos {
     }
 
     public String obtenerUltimoId() throws SQLException {
-        String sql = "SELECT MAX(id) AS ultimo FROM categorias";
+        String sql = "SELECT MAX(id) AS ultimo FROM categoria";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql);
