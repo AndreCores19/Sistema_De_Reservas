@@ -41,13 +41,11 @@ El proyecto aplica una arquitectura por capas y el patrón MVC en la interfaz Ja
 ```text
 FXML (vista)
   -> app.ui (controladores MVC)
-  -> app.Servicios (fachadas de aplicación)
-  -> app.Logica (reglas de negocio)
-  -> app.Datos (persistencia Gson)
-  -> Data/*.json
+  -> app.Servicios.*Cliente (cliente HTTP del backend)
+  -> Backend (lógica y persistencia)
 ```
 
-La separación no es completamente estricta: algunos controladores crean servicios directamente y algunas clases de lógica crean objetos de datos o de otras capas. La sesión activa se mantiene en `app.Controllers.SesionActual`, mediante un `UsuarioDTO` estático.
+Los controladores del frontend no importan `app.Logica` ni `app.Datos`. Las utilidades de gráficos y reportes PDF que solo presentan información viven en `app.ui.utilidades`. La sesión activa se mantiene en `app.Controllers.SesionActual`, mediante un `UsuarioDTO`.
 
 ### Paquetes principales
 
@@ -74,7 +72,9 @@ Objetos de transferencia utilizados entre capas:
 
 #### `app.Servicios`
 
-Fachadas utilizadas por la interfaz: `ServicioUsuario`, `ServicioFuncionario`, `ServicioCategoria`, `ServicioRecurso`, `ServicioReservas`, `ServicioCalendarizacionRecursos`, `ServicioProgramacion`, `ServicioEstadisticas`, `ServicioGemini`, `ServicioGeneradorGrafico`, `ServicioPDF` y `ServicioImpresion`.
+Clientes utilizados por la interfaz: `ServicioUsuarioCliente`, `ServicioFuncionarioCliente`, `ServicioCategoriaCliente`, `ServicioRecursoCliente`, `ServicioReservasCliente`, `ServicioCalendarizacionRecursosCliente`, `ServicioProgramacionCliente`, `ServicioEstadisticasCliente` y `ServicioGeminiCliente`. `NotificacionesCliente` define el contrato que debe implementar el transporte de notificaciones. `ClienteBase` centraliza las peticiones HTTP y sus errores.
+
+Las clases `ServicioUsuario`, `ServicioFuncionario`, `ServicioCategoria`, `ServicioRecurso`, `ServicioReservas`, `ServicioCalendarizacionRecursos`, `ServicioProgramacion` y `ServicioEstadisticas` pertenecen al backend. Las utilidades locales de presentación son `app.ui.utilidades.ServicioGeneradorGrafico` y `app.ui.utilidades.ServicioImpresion`.
 
 #### `app.Logica`
 
@@ -110,6 +110,8 @@ Las vistas se encuentran en `src/main/resources/app/ui/`:
 `SistemaDeReservasFuncionario.fxml` y `SistemaDeReservasFuncionarioAdmin.fxml` son contenedores `TabPane` que incorporan las vistas mediante `fx:include`. Después del login, `LoginViewController` carga el contenedor de funcionario o administrador según `UsuarioDTO.getRol()`. Por ello, los mantenimientos administrativos no aparecen en la interfaz de un funcionario.
 
 Ambos contenedores muestran `alertas-view.fxml` a la derecha de las pestañas. `AlertasViewController.recibirAlerta` y `recibirReserva` son los puntos de entrada seguros para el hilo de notificaciones del cliente: internamente usan `Platform.runLater`. Las alertas se mantienen en una lista observable, se pueden consultar en una ventana emergente y descartarse únicamente de forma local.
+
+`SistemaDeReservasViewController` es el controlador de ambos contenedores principales. Su método `configurarNotificaciones(NotificacionesCliente)` registra el listener de reservas, inicia el cliente de notificaciones y entrega cada reserva a `AlertasViewController`.
 
 ## Funcionalidades
 

@@ -64,7 +64,7 @@ public class ReservasViewController {
             try {
                 imprimirReservas();
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                mostrarError("No se pudo generar el reporte: " + mensajeError(e));
             }
         });
         tvMisReservas.getSelectionModel().selectedItemProperty().addListener((obs, anterior, seleccionado) -> {
@@ -100,7 +100,6 @@ public class ReservasViewController {
             if (extraido.getHoraFin() != null) cbxHoraFin.setValue(extraido.getHoraFin().format(DateTimeFormatter.ofPattern("HH:mm")));
             seleccionarCategoriasSugeridas(extraido.getCategoriasSugeridas());
         } catch (Exception e) {
-            e.printStackTrace();
             mostrarError("No se pudo interpretar la frase. Completa el formulario manualmente.");
         }
     }
@@ -223,53 +222,30 @@ public class ReservasViewController {
     private void reservarCategoria() {
         try {
         List<String> idsCategorias = lvCategorias.getSelectionModel().getSelectedItems().stream().map(CategoriaDTO::getId).collect(Collectors.toList());
-         if (txtFActividad.getText().isEmpty()) {
-            mostrarError("La actividad no puede estar vacía.");
-            return;
-         }
-         if (dpFecha.getValue() == null) {
-            mostrarError("Debe seleccionar una fecha.");
-            return;
-         }
-         if (cbxHoraInicio.getValue() == null) {
-            mostrarError("Debe seleccionar una hora de inicio.");
-            return;
-         }
-         if (cbxHoraFin.getValue() == null) {
-            mostrarError("Debe seleccionar una hora de fin.");
-            return;
-         }
-         if (idsCategorias.isEmpty()) {
-            mostrarError("Debe seleccionar al menos una categoría.");
-            return;
-         }
-         if (LocalTime.parse(cbxHoraFin.getValue()).isBefore(LocalTime.parse(cbxHoraInicio.getValue()))) {
-            mostrarError("La hora de fin no puede ser anterior a la hora de inicio.");
-            return;
-         }
-         if (LocalTime.parse(cbxHoraFin.getValue()).equals(LocalTime.parse(cbxHoraInicio.getValue()))) {
-            mostrarError("La hora de fin no puede ser igual a la hora de inicio.");
-            return;
-         }
-         if (dpFecha.getValue().isBefore(java.time.LocalDate.now())) {
-            mostrarError("La fecha de la reserva no puede ser anterior a la fecha actual.");
-            return;
-         }
-         if (dpFecha.getValue().equals(java.time.LocalDate.now()) && LocalTime.parse(cbxHoraInicio.getValue()).isBefore(LocalTime.now())) {
-            mostrarError("La hora de inicio/fin no puede ser anterior a la hora actual.");
-            return;
-         }
-         if (dpFecha.getValue().equals(java.time.LocalDate.now()) && LocalTime.parse(cbxHoraFin.getValue()).isBefore(LocalTime.now())) {
-            mostrarError("La hora de fin no puede ser anterior a la hora actual.");
-            return;
-         }
+        LocalTime horaInicio = cbxHoraInicio.getValue() == null
+                ? null : LocalTime.parse(cbxHoraInicio.getValue());
+        LocalTime horaFin = cbxHoraFin.getValue() == null
+                ? null : LocalTime.parse(cbxHoraFin.getValue());
+        String errorValidacion = ReservaFormularioValidator.validar(
+                txtFActividad.getText(),
+                dpFecha.getValue(),
+                horaInicio,
+                horaFin,
+                idsCategorias,
+                LocalDate.now(),
+                LocalTime.now()
+        );
+        if (errorValidacion != null) {
+           mostrarError(errorValidacion);
+           return;
+        }
         ReservaDTO nuevaReserva =
                 new ReservaDTO(
                         null,
                         txtFActividad.getText(),
                         dpFecha.getValue(),
-                        LocalTime.parse(cbxHoraInicio.getValue()),
-                        LocalTime.parse(cbxHoraFin.getValue()),
+                        horaInicio,
+                        horaFin,
                         idsCategorias,
                         idFuncionarioActual,
                         "ACTIVA",
@@ -322,6 +298,13 @@ public class ReservasViewController {
         alerta.setContentText(mensaje);
         alerta.showAndWait();
     }
+
+    private String mensajeError(Exception excepcion) {
+        return excepcion.getMessage() == null || excepcion.getMessage().isBlank()
+                ? "Error inesperado."
+                : excepcion.getMessage();
+    }
+
     private void mostrarExito(String mensaje) {
         Alert alerta = new Alert(Alert.AlertType.INFORMATION);
         alerta.setHeaderText(null);
@@ -338,7 +321,7 @@ public class ReservasViewController {
             javafx.stage.Stage stage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
             stage.getScene().setRoot(raiz);
         } catch (Exception e) {
-            e.printStackTrace();
+            mostrarError(e.getMessage() != null ? e.getMessage() : "No se pudo volver al inicio de sesión.");
         }
     }
 }

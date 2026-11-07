@@ -19,7 +19,7 @@ public abstract class ClienteBase {
 
     private String enviar(String ruta, String cuerpo, String tipoContenido) throws Exception {
         HttpRequest solicitud = HttpRequest.newBuilder()
-                .uri(URI.create(ConfigCliente.URL_SERVIDOR + ruta))
+                .uri(URI.create(ConfigCliente.urlServidor() + ruta))
                 .header("Content-Type", tipoContenido)
                 .POST(HttpRequest.BodyPublishers.ofString(cuerpo))
                 .build();

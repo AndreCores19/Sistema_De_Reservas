@@ -5,7 +5,8 @@
 <?import javafx.scene.layout.BorderPane?>
 
 <BorderPane prefHeight="630.0" prefWidth="1100.0"
-            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="app.ui.SistemaDeReservasViewController">
    <center>
       <TabPane fx:id="tbpFuncionario" pickOnBounds="false" tabClosingPolicy="UNAVAILABLE">
          <tabs>
@@ -17,6 +18,6 @@
       </TabPane>
    </center>
    <right>
-      <fx:include source="alertas-view.fxml" />
+      <fx:include fx:id="alertas" source="alertas-view.fxml" />
    </right>
 </BorderPane>

@@ -53,7 +53,6 @@ public class LoginViewController {
             stage.centerOnScreen();
 
         } catch (Exception e) {
-            e.printStackTrace();
             mostrarError(e.getMessage() != null ? e.getMessage() : "Error al iniciar sesión.");
         }
     }

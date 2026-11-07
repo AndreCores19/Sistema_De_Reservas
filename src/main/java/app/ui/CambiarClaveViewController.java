@@ -73,7 +73,7 @@ public class CambiarClaveViewController {
             stage.setHeight(363);
             stage.centerOnScreen();
         } catch (Exception e) {
-            e.printStackTrace();
+            mostrarError(e.getMessage() != null ? e.getMessage() : "No se pudo volver al inicio de sesión.");
         }
     }
 }

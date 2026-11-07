@@ -193,7 +193,7 @@ public class FuncionarioViewController {
             javafx.stage.Stage stage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
             stage.getScene().setRoot(raiz);
         } catch (Exception e) {
-            e.printStackTrace();
+            mostrarError(e.getMessage() != null ? e.getMessage() : "No se pudo volver al inicio de sesión.");
         }
     }
 }

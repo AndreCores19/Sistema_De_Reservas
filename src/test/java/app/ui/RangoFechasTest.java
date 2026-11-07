@@ -18,7 +18,7 @@ class RangoFechasTest {
     @Test
     void rechazaFechasIncompletas() {
         assertEquals(
-                "Debe seleccionar las fechas desde y hasta.",
+                "Debe seleccionar las fechas inicial y final.",
                 RangoFechas.validar(null, LocalDate.of(2026, 11, 5))
         );
     }
@@ -26,7 +26,7 @@ class RangoFechasTest {
     @Test
     void rechazaUnRangoInvertido() {
         assertEquals(
-                "La fecha desde no puede ser posterior a la fecha hasta.",
+                "La fecha inicial seleccionada no puede ser posterior a la fecha final seleccionada.",
                 RangoFechas.validar(
                         LocalDate.of(2026, 11, 6),
                         LocalDate.of(2026, 11, 5)

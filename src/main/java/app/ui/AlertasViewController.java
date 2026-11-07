@@ -2,8 +2,6 @@ package app.ui;
 
 import app.DTO.AlertaReservaDTO;
 import app.DTO.ReservaDTO;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -26,7 +24,7 @@ public class AlertasViewController {
     @FXML private TableColumn<AlertaReservaDTO, Void> columnaVer;
     @FXML private TableColumn<AlertaReservaDTO, Void> columnaDescartar;
 
-    private final ObservableList<AlertaReservaDTO> alertas = FXCollections.observableArrayList();
+    private final AlertasModel modelo = new AlertasModel();
 
     @FXML
     private void initialize() {
@@ -35,16 +33,14 @@ public class AlertasViewController {
                 : alerta.getValue().getFecha().toString()));
         configurarBoton(columnaVer, "Ver", this::verAlerta);
         configurarBoton(columnaDescartar, "Descartar", this::descartarAlerta);
-        tablaAlertas.setItems(alertas);
+        tablaAlertas.setItems(modelo.getAlertas());
     }
 
 
      //Se agrega una alerta desde el hilo
 
     public void agregarAlerta(AlertaReservaDTO alerta) {
-        if (alerta != null) {
-            alertas.add(alerta);
-        }
+        modelo.agregar(alerta);
     }
 
     //Punto de entrada para el hilo que reciba notificaciones del backend.
@@ -116,7 +112,7 @@ public class AlertasViewController {
         confirmacion.setHeaderText(null);
         confirmacion.showAndWait().ifPresent(respuesta -> {
             if (respuesta == ButtonType.OK) {
-                alertas.remove(alerta);
+                modelo.descartar(alerta);
             }
         });
     }
