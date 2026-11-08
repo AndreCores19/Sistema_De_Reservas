@@ -1,6 +1,8 @@
 # Sistema de Reserva de Recursos
 
-Aplicación de escritorio desarrollada en JavaFX para administrar usuarios, funcionarios, categorías, recursos y reservas de una organización. El sistema permite asignar recursos automáticamente, consultar calendarizaciones, generar estadísticas y exportar información a PDF.
+Aplicación de escritorio desarrollada en JavaFX para administrar usuarios, funcionarios, categorías, recursos y reservas de una organización. El sistema permite asignar recursos automáticamente, consultar calendarizaciones, generar estadísticas, exportar información a PDF y recibir notificaciones de reservas nuevas.
+
+Está dividida en un **frontend** (interfaz JavaFX) y un **backend** (servidor con la lógica y el acceso a MySQL) que se comunican por la red.
 
 ### Integrantes:
 - Andrea Cordero Espinoza
@@ -10,46 +12,82 @@ Aplicación de escritorio desarrollada en JavaFX para administrar usuarios, func
 
 ## Requisitos
 
-- JDK 21.
-- Maven 3.9 o posterior.
-- Sistema operativo con JavaFX compatible.
-- Conexión a Internet y una clave de Gemini únicamente para la extracción de reservas mediante lenguaje natural.
+- JDK 21 y Maven 3.9 o posterior (el de IntelliJ sirve).
+- MySQL 8 con el script `Database/baseDatos.sql` ejecutado.
+- Una clave de Gemini, solo en la máquina del servidor, para la extracción de reservas con lenguaje natural.
 
 ## Ejecución
 
-Desde la raíz del proyecto:
+El sistema son dos programas que se ejecutan por separado y pueden estar en computadoras distintas. Los dos deben iniciarse con la raíz del proyecto como directorio de trabajo.
+
+### 1. Base de datos
+
+Ejecutar `Database/baseDatos.sql` en MySQL con un usuario administrador. El script **borra y recrea** la base `sistema_reservas`, carga datos de prueba y crea el usuario `reservas_app` que usa el servidor.
+
+### 2. Servidor (backend)
+
+Ejecutar la clase `app.ServidorApp`. Levanta:
+
+- el servidor HTTP en el puerto **8080**;
+- el servidor de notificaciones por socket en el puerto **9090**.
+
+Para la función de IA hay que definir antes la variable de entorno `GEMINI_API_KEY` en la máquina del servidor (en IntelliJ: *Run → Edit Configurations → Environment variables*). La clave no está incluida en el repositorio y la interfaz no la necesita, porque es el servidor quien consulta a Gemini.
+
+### 3. Interfaz (frontend)
+
+Con el servidor ya iniciado:
 
 ```powershell
-mvn clean
-mvn compile
 mvn javafx:run
 ```
 
-El `javafx-maven-plugin` usa `app.App` como clase principal. También existen `app.Launcher`, que delega en `App.main`, y dos utilidades manuales: `app.QuemadosJson` para crear datos iniciales y `app.PruebaPDF` para probar generación de reportes.
+El `javafx-maven-plugin` usa `app.App` como clase principal. También existe `app.Launcher`, que delega en `App.main`.
 
-La aplicación usa rutas relativas como `Data/reservas.json`; por eso debe iniciarse con la raíz del proyecto como directorio de trabajo.
+Credenciales de prueba: `admin` / `hola123` (administrador) y `111` / `111` (funcionario).
 
-Para la función de IA, definir la variable de entorno GEMINI_API_KEY antes de iniciar el servidor.
+### Servidor en otra computadora
 
+Por defecto la interfaz se conecta a `localhost`. Para conectarse a un servidor que está en otra máquina:
 
-La clave no está incluida en el repositorio.
+1. Copiar `servidor.properties.example` como `servidor.properties` en la raíz del proyecto.
+2. Escribir en él la IP del servidor (`host=192.168.1.25`). La IP se obtiene con `ipconfig` en la computadora del servidor.
+3. En la computadora del servidor, permitir conexiones entrantes a los puertos 8080 y 9090 en el firewall de Windows.
+4. Reiniciar la interfaz.
+
+`servidor.properties` no se sube al repositorio, porque cada computadora tiene su propia IP. Si el archivo no existe, se usa `localhost`; también se puede indicar el servidor con la variable de entorno `SERVIDOR_HOST`, pero el archivo tiene prioridad. Para volver a ejecutar todo en una sola computadora, basta con borrar el archivo o dejar `host=localhost`.
 
 ## Arquitectura
 
-El proyecto aplica una arquitectura por capas y el patrón MVC en la interfaz JavaFX:
+La aplicación se divide en un frontend y un backend que se comunican por la red. Solo el backend accede a la base de datos.
 
 ```text
-FXML (vista)
-  -> app.ui (controladores MVC)
-  -> app.Servicios (fachadas de aplicación)
-  -> app.Logica (reglas de negocio)
-  -> app.Datos (persistencia Gson)
-  -> Data/*.json
+FRONTEND (JavaFX)                          BACKEND (servidor)
+
+FXML -> app.ui (controladores MVC)
+          -> app.Servicios.*Cliente   --HTTP-->   app.Servidor (handlers)
+          <- notificaciones <--socket--           -> app.Servicios (fachadas)
+                                                  -> app.Logica
+                                                  -> app.Datos (JDBC)
+                                                  -> MySQL
 ```
 
-La separación no es completamente estricta: algunos controladores crean servicios directamente y algunas clases de lógica crean objetos de datos o de otras capas. La sesión activa se mantiene en `app.Controllers.SesionActual`, mediante un `UsuarioDTO` estático.
+#### Reglas de capas
+
+- Los controladores solo importan DTOs y las clases `...Cliente`. Nunca `Logica`, `Datos` ni `ConexionBD`.
+- Frontend y backend no se llaman directamente: todo pasa por el servidor.
+- Los DTOs de `app.DTO` se comparten entre ambos lados y viajan como parámetros de formulario o como JSON (Gson).
+- El servidor no confía en el cliente: genera por su cuenta los ids, el estado y los recursos asignados de cada reserva, y valida todos los datos que recibe.
 
 ### Paquetes principales
+
+- `app.ui`: controladores de las vistas (frontend).
+- `app.ui.utilidades`: generación de gráficos, reportes PDF e impresión. Solo presentación: trabajan sobre DTOs que el frontend ya recibió del servidor.
+- `app.Servicios`: contiene dos tipos de clases. Las `...Cliente` (frontend) hacen las peticiones HTTP a partir de `ClienteBase`. Las fachadas `Servicio...` (backend) son las que llaman a la Lógica.
+- `app.Servidor`: `ServidorHTTP`, un handler por entidad, `HttpUtil` y `ServidorNotificaciones`.
+- `app.Logica`: reglas de negocio.
+- `app.Datos`: acceso a MySQL con JDBC.
+- `app.DTO`: objetos de transferencia y `GsonUtil` (adaptadores de `LocalDate` y `LocalTime` para JSON).
+- `app.Controllers`: `SesionActual`, que guarda el usuario con la sesión activa en el frontend.
 
 #### `app.ui`
 
@@ -68,28 +106,72 @@ Controladores de las vistas:
 
 #### `app.DTO`
 
-Objetos de transferencia utilizados entre capas:
+Objetos de transferencia utilizados entre el frontend y el backend:
 
 `UsuarioDTO`, `AdministradorDTO`, `FuncionarioDTO`, `CategoriaDTO`, `RecursoDTO`, `ReservaDTO`, `ResultadoDeAsignacionDTO`, `MatrizDTO`, `CeldaActividadDTO`, `ExtraccionIADTO` y `ResultadoEstadisticaDTO`.
 
 #### `app.Servicios`
 
-Fachadas utilizadas por la interfaz: `ServicioUsuario`, `ServicioFuncionario`, `ServicioCategoria`, `ServicioRecurso`, `ServicioReservas`, `ServicioCalendarizacionRecursos`, `ServicioProgramacion`, `ServicioEstadisticas`, `ServicioGemini`, `ServicioGeneradorGrafico`, `ServicioPDF` y `ServicioImpresion`.
+- **Clientes (frontend):** `ClienteBase` (envío de peticiones y manejo de errores), `ConfigCliente` (dirección del servidor), `ServicioUsuarioCliente`, `ServicioFuncionarioCliente`, `ServicioCategoriaCliente`, `ServicioRecursoCliente`, `ServicioReservasCliente`, `ServicioCalendarizacionRecursosCliente`, `ServicioProgramacionCliente`, `ServicioEstadisticasCliente`, `ServicioGeminiCliente` y `ServicioNotificacionesCliente` (conexión al socket de notificaciones).
+- **Fachadas (backend):** `ServicioUsuario`, `ServicioFuncionario`, `ServicioCategoria`, `ServicioRecurso`, `ServicioReservas`, `ServicioCalendarizacionRecursos`, `ServicioProgramacion`, `ServicioEstadisticas` y `ServicioGemini`.
+
+#### `app.Servidor`
+
+- `ServidorHTTP`: crea el `HttpServer`, registra una ruta por entidad y define el grupo de hilos que atiende las peticiones.
+- Un handler por entidad: `UsuarioHandler`, `ReservasHandler`, `CategoriaHandler`, `RecursoHandler`, `FuncionarioHandler`, `CalendarizacionHandler`, `EstadisticasHandler` y `GeminiHandler`.
+- `HttpUtil`: lectura de parámetros, respuestas JSON y respuestas de error.
+- `ServidorNotificaciones`: servidor de sockets que avisa de las reservas nuevas.
 
 #### `app.Logica`
 
-Contiene las reglas de autenticación, CRUD, asignación y reportes:
+Contiene las reglas de autenticación, CRUD y asignación:
 
 - `UsuarioLogica`, `FuncionarioLogica`, `CategoriaLogica` y `RecursoLogica`.
-- `LogicaReservas`, que valida traslapes y selecciona el primer recurso libre de cada categoría.
-- `CalendarizacionRecursosLogica` y `ReporteLogica`.
-- `GeneradorReportePDFLogica`, basado en iText.
-- `GeneradorGraficoLogica`, basado en JFreeChart.
-- `LogicaGemini`, cliente HTTP de la API de Gemini.
+- `LogicaReservas`, que valida traslapes y selecciona el primer recurso libre de cada categoría. Las operaciones que modifican reservas se ejecutan bajo un candado para que dos peticiones simultáneas no tomen el mismo recurso.
+- `CalendarizacionRecursosLogica`.
+- `LogicaGemini`, cliente HTTP de la API de Gemini (se ejecuta en el servidor).
+
+Las clases de reportes y gráficos (`ReporteLogica`, `GeneradorReportePDFLogica`, `GeneradorGraficoLogica`) pertenecen al frontend y se encuentran en `app.ui.utilidades`.
 
 #### `app.Datos`
 
-`UsuarioDatos`, `AdministradorDatos`, `FuncionarioDatos`, `CategoriaDatos`, `RecursoDatos` y `ReservaDatos` leen y escriben listas de DTO con Gson. `ReservaDatos` incluye adaptadores para `LocalDate` y `LocalTime`.
+`ConexionBD`, `UsuarioDatos`, `FuncionarioDatos`, `CategoriaDatos`, `RecursoDatos` y `ReservaDatos` leen y escriben en MySQL con JDBC. `ReservaDatos` guarda una reserva y sus listas de categorías y recursos en una sola transacción.
+
+## Comunicación entre cliente y servidor
+
+### Rutas HTTP (puerto 8080)
+
+Todas son `POST`. Los datos simples van como parámetros de formulario (`nombre=valor&...`) y los DTOs complejos como JSON. Las respuestas son JSON. Los errores devuelven `{"error": "mensaje"}` con código 400 (datos inválidos), 401 (credenciales incorrectas), 404 (ruta inexistente), 405 (método no permitido) o 500 (error interno).
+
+| Ruta | Recibe | Responde |
+|---|---|---|
+| `/usuario/login` | `id`, `clave` | Usuario (sin la clave) |
+| `/usuario/cambiarClave` | `id`, `claveActual`, `claveNueva` | Mensaje |
+| `/reserva/crear` | `ReservaDTO` en JSON | Mensaje |
+| `/reserva/listarPorFuncionario` | `idFuncionario` | Lista de reservas |
+| `/reserva/cancelar` | `idReserva` | Mensaje |
+| `/estadistica/recursos` | `desde`, `hasta` (aaaa-mm-dd) | Lista de resultados |
+| `/estadistica/actividades` | `desde`, `hasta` (aaaa-mm-dd) | Lista de resultados |
+| `/calendarizacion/recursos` | `idCategoria`, `fecha` | Matriz de recursos |
+| `/calendarizacion/actividades` | `fecha` | Matriz de actividades |
+| `/categorias/listar`, `buscarPorId`, `buscarPorDescripcion`, `agregar`, `modificar`, `eliminar` | `id`, `texto`, `descripcion` según la ruta | Categoría(s) o mensaje |
+| `/recursos/listar`, `filtrarPorCategoria`, `buscarPorNumActivo`, `agregar`, `modificar`, `eliminar` | `numActivo`, `idCategoria`, `descripcion` según la ruta | Recurso(s) o mensaje |
+| `/funcionarios/listar`, `buscarPorId`, `buscarPorNombre`, `agregar`, `modificar`, `eliminar` | `id`, `texto`, `nombre`, `telefono` según la ruta | Funcionario(s) sin clave o mensaje |
+| `/gemini/extraer` | `frase` | Datos extraídos (actividad, fecha, horas y categorías sugeridas) |
+
+Las claves de los usuarios nunca se devuelven al cliente.
+
+### Notificaciones de reservas nuevas (puerto 9090)
+
+Cuando se crea una reserva, el servidor se la envía a los demás funcionarios conectados, que la reciben sin tener que consultar al servidor.
+
+1. Al iniciar sesión, el cliente abre un socket al puerto 9090.
+2. Envía una primera línea con el id del funcionario.
+3. El servidor guarda la conexión. Cada vez que se crea una reserva, envía una línea con el `ReservaDTO` en JSON a todos los clientes conectados, **excepto** al funcionario que la creó.
+4. El cliente lee las líneas en un hilo de fondo y las entrega al panel de Alertas (ver la sección *Alertas*).
+5. Al cerrar sesión, el cliente cierra el socket y el servidor lo quita de su lista.
+
+Si la notificación falla, la reserva ya queda guardada: el aviso es independiente de su creación.
 
 ## Vistas y navegación
 
@@ -113,7 +195,7 @@ Las vistas se encuentran en `src/main/resources/app/ui/`:
 
 ### Login y sesión
 
-El usuario ingresa su ID y clave. La aplicación valida campos, consulta `UsuarioLogica`, registra el usuario en `SesionActual` y carga la interfaz correspondiente. También permite cerrar sesión y cambiar la clave.
+El usuario ingresa su ID y clave. La interfaz los envía al servidor (`/usuario/login`), que los valida contra la base de datos. Si son correctos, se registra el usuario en `SesionActual` y se carga la interfaz correspondiente. También permite cerrar sesión y cambiar la clave.
 
 ### Reservas
 
@@ -125,7 +207,7 @@ Un funcionario puede:
 - Imprimir sus reservas.
 - Escribir una descripción en lenguaje natural y solicitar que Gemini complete el formulario.
 
-La lógica valida fechas no anteriores al día actual, horarios pasados para reservas del día actual y que la hora final sea posterior a la inicial. Para cada categoría seleccionada intenta asignar el primer recurso libre. El traslape se detecta con la condición:
+El servidor valida que la actividad no esté vacía ni exceda el largo máximo, que el funcionario exista, que la fecha y la hora de inicio sean futuras y que la hora final sea posterior a la inicial. Para cada categoría seleccionada intenta asignar el primer recurso libre; si alguna no tiene recursos disponibles en ese horario, rechaza la reserva e indica cuáles. El traslape se detecta con la condición:
 
 ```java
 horaInicioA.isBefore(horaFinB)
@@ -133,6 +215,11 @@ horaInicioA.isBefore(horaFinB)
 ```
 
 Las reservas canceladas no se consideran ocupación. La extracción de IA espera actividad, fecha (`YYYY-MM-DD`), horas (`HH:mm`) y nombres de categorías, y solo selecciona categorías que existan en el sistema.
+
+### Alertas
+
+# AQUÍ VA LO DE JP
+(panel de Alertas: cómo se muestran las reservas nuevas, Ver y Descartar, y cómo se conecta el hilo receptor al socket de notificaciones).
 
 ### Mantenimientos administrativos
 
@@ -149,28 +236,27 @@ Ambas vistas tienen opciones de impresión.
 
 ### Estadísticas y reportes
 
-`ServicioEstadisticas` calcula:
+El servidor calcula (`ServicioEstadisticas`):
 
 1. Cantidad de recursos/categorías reservados en un rango de fechas.
 2. Cantidad de actividades agrupadas por la semana de cada lunes.
 
-`GeneradorGraficoLogica` crea gráficos de barras con JFreeChart. `ReporteLogica`, `GeneradorReportePDFLogica`, `ServicioPDF` y `ServicioImpresion` generan o abren reportes PDF para reservas, funcionarios, categorías, recursos, matrices, programación y estadísticas.
+El frontend recibe los resultados ya calculados. `GeneradorGraficoLogica` crea los gráficos de barras con JFreeChart, y `ReporteLogica`, `GeneradorReportePDFLogica`, `ServicioPDF` y `ServicioImpresion` generan o abren reportes PDF para reservas, funcionarios, categorías, recursos, matrices, programación y estadísticas.
 
 ## Persistencia
 
-La aplicación utiliza archivos JSON como almacenamiento local. Los archivos administrados bajo `Data/` son:
+Los datos se guardan en MySQL (base `sistema_reservas`) y solo el backend accede a ella, mediante JDBC en `app.Datos`. El script `Database/baseDatos.sql` crea el esquema y los datos de prueba.
 
-```text
-Data/administradores.json
-Data/funcionarios.json
-Data/categorias.json
-Data/recursos.json
-Data/reservas.json
-```
+| Tabla | Contenido |
+|---|---|
+| `usuario` | Administradores y funcionarios (se distinguen por el campo `rol`) |
+| `categoria` | Categorías de recursos |
+| `recurso` | Recursos, con su categoría |
+| `reserva` | Reservas: actividad, fecha, horas, funcionario y estado (`ACTIVA` o `CANCELADA`) |
+| `reserva_categoria` | Categorías solicitadas en cada reserva |
+| `reserva_recurso` | Recursos asignados a cada reserva |
 
-Gson serializa los DTO con formato legible. Las fechas y horas de `ReservaDTO` se convierten mediante adaptadores de `ReservaDatos`.
-
-El directorio `Data/` contiene los datos iniciales del sistema y los reportes PDF generados por la aplicación.
+Las claves de los usuarios se guardan en texto plano porque es un proyecto académico; en un sistema real deberían almacenarse con un hash seguro. Por la misma razón, la comunicación usa HTTP sin cifrar; en un sistema real se usaría HTTPS.
 
 ## Dependencias principales
 
@@ -178,6 +264,7 @@ Definidas en `pom.xml`:
 
 - JavaFX Controls, FXML y Swing `21.0.2`.
 - Gson `2.11.0`.
+- MySQL Connector/J `8.4.0`.
 - iText `8.0.5`.
 - JFreeChart `1.5.4`.
 - JSON-java `20260814`.
@@ -193,7 +280,7 @@ mvn test
 mvn verify
 ```
 
-Las pruebas de integración usan copias de los datos reales en `src/test/resources/` (`*_prueba.json`) para no depender ni modificar los archivos de `Data/`. Las de escritura además usan `@TempDir` para no compartir estado entre ellas.
+Las pruebas de integración usan la base de datos MySQL, por lo que necesitan que el servidor de MySQL esté en ejecución con el script `Database/baseDatos.sql` aplicado. Para no mezclarse con los datos reales, crean un escenario propio (`DatosDePrueba`) con identificadores reconocibles y fechas del año 2099, y lo borran al terminar.
 
 ### Cobertura actual
 
@@ -207,24 +294,31 @@ Las pruebas de integración usan copias de los datos reales en `src/test/resourc
 | `ServicioProgramacionIT` | Integración | Matriz semanal de actividades |
 | `ServicioEstadisticasIT` | Integración | Estadísticas de recursos y de actividades |
 | `CalendarizacionRecursosLogicaIT` | Integración | Matriz diaria de disponibilidad de recursos |
+| `CategoriaDatosIT`, `RecursoDatosIT`, `ReservaDatosIT`, `ConexionBDIT` | Integración | Acceso a MySQL de cada entidad y de la conexión |
 | `GeneradorGraficoLogicaTest` | Unidad | Validación de argumentos del generador de gráficos |
 | `GeneradorReportePDFLogicaTest` | Unidad | Validación de argumentos y generación real de PDF (contenido, filas vacías, ruta inválida) |
 | `LogicaReservasHayConflictoHorasTest` | Unidad | Detección de traslape de horarios (solapado, contenido, límites exactos) |
 
-
 ## Estructura resumida
 
 ```text
-Proyecto_1/
-├── Data/                         # Persistencia JSON y PDFs generados
+Sistema_De_Reservas/
+├── Database/
+│   └── baseDatos.sql               # Esquema y datos de prueba de MySQL
 ├── src/main/java/app/
-│   ├── Controllers/              # Sesión global
-│   ├── DTO/                      # Objetos de transferencia
-│   ├── Datos/                    # Acceso a JSON
-│   ├── Logica/                   # Reglas de negocio
-│   ├── Servicios/                # Fachadas de aplicación
-│   └── ui/                      # Controladores JavaFX
-├── src/main/resources/app/ui/    # FXML e imágenes
+│   ├── App.java, Launcher.java     # Inicio de la interfaz (frontend)
+│   ├── ServidorApp.java            # Inicio del servidor (backend)
+│   ├── Controllers/                # Sesión activa
+│   ├── DTO/                        # Objetos de transferencia y GsonUtil
+│   ├── Datos/                      # Acceso a MySQL (JDBC)
+│   ├── Logica/                     # Reglas de negocio
+│   ├── Servicios/                  # Clientes (frontend) y fachadas (backend)
+│   ├── Servidor/                   # Servidor HTTP, handlers y notificaciones
+│   └── ui/                         # Controladores JavaFX
+│       └── utilidades/             # Gráficos, PDF e impresión
+├── src/main/resources/app/ui/      # FXML e imágenes
+├── src/test/                       # Pruebas de unidad e integración
+├── servidor.properties.example     # Plantilla para indicar la IP del servidor
 ├── pom.xml
 └── README.md
 ```
