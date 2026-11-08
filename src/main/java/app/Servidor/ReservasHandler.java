@@ -42,7 +42,11 @@ public class ReservasHandler implements HttpHandler {
             return;
         }
 
-        // ServidorNotificaciones.notificarNuevaReserva(reserva);
+        try {
+            ServidorNotificaciones.notificarNuevaReserva(reserva);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         HttpUtil.enviarRespuesta(exchange, 200,
                 HttpUtil.aJson(Map.of("mensaje", "Reserva creada correctamente.")));
