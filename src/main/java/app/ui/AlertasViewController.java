@@ -1,7 +1,6 @@
 package app.ui;
 
 import app.DTO.AlertaReservaDTO;
-import app.DTO.ReservaDTO;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -37,7 +36,7 @@ public class AlertasViewController {
     private void initialize() {
         columnaActividad.setCellValueFactory(new PropertyValueFactory<>("actividad"));
         configurarBoton(columnaVer, "\uD83D\uDCC1", "Ver detalle de la alerta", null, this::verAlerta);
-        configurarBoton(columnaDescartar, "\u2296", "Descartar alerta",
+        configurarBoton(columnaDescartar, "⊖", "Descartar alerta",
                 "-fx-text-fill: #d32f2f; -fx-font-weight: bold;", this::descartarAlerta);
         tablaAlertas.setColumnResizePolicy(
                 TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
@@ -56,18 +55,6 @@ public class AlertasViewController {
     public void recibirAlerta(AlertaReservaDTO alerta) {
         if (alerta != null) {
             Platform.runLater(() -> agregarAlerta(alerta));
-        }
-    }
-
-    public void agregarReserva(ReservaDTO reserva) {
-        if (reserva != null) {
-            agregarAlerta(new AlertaReservaDTO(reserva));
-        }
-    }
-
-    public void recibirReserva(ReservaDTO reserva) {
-        if (reserva != null) {
-            recibirAlerta(new AlertaReservaDTO(reserva));
         }
     }
 
