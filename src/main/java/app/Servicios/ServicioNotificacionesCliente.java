@@ -1,6 +1,9 @@
 package app.Servicios;
 
 import app.DTO.GsonUtil;
+import app.DTO.AlertaReservaDTO;
+import app.DTO.FuncionarioDTO;
+import app.DTO.RecursoDTO;
 import app.DTO.ReservaDTO;
 import java.io.*;
 import java.net.Socket;
@@ -10,14 +13,14 @@ import java.util.function.Consumer;
 public class ServicioNotificacionesCliente implements NotificacionesCliente {
     private Socket socket;
     private final String idFuncionario;
-    private Consumer<ReservaDTO> listener;
+    private Consumer<AlertaReservaDTO> listener;
 
     public ServicioNotificacionesCliente(String idFuncionario) {
         this.idFuncionario = idFuncionario;
     }
 
     @Override
-    public void registrarListener(Consumer<ReservaDTO> listener) {
+    public void registrarListener(Consumer<AlertaReservaDTO> listener) {
         this.listener = listener;
     }
 
@@ -27,7 +30,7 @@ public class ServicioNotificacionesCliente implements NotificacionesCliente {
             throw new IllegalStateException("No se registró el listener de notificaciones.");
         }
         try {
-            conectar(idFuncionario, listener);
+            conectar(idFuncionario, this::pasarANombres);
         } catch (IOException e) {
             throw new IllegalStateException("No se pudo conectar al servidor de notificaciones.", e);
         }
@@ -54,9 +57,48 @@ public class ServicioNotificacionesCliente implements NotificacionesCliente {
                 ReservaDTO reserva = GsonUtil.GSON.fromJson(linea, ReservaDTO.class);
                 alRecibir.accept(reserva);
             }
+
         } catch (IOException e) {
             // el servidor se desconectó
         }
+    }
+
+    private void pasarANombres(ReservaDTO reserva) {
+        if (reserva == null || listener == null) {
+            return;
+        }
+
+        String encargado = reserva.getIdFuncionario();
+        try {
+            FuncionarioDTO funcionario = new ServicioFuncionarioCliente()
+                    .buscarPorId(reserva.getIdFuncionario());
+            if (funcionario != null && funcionario.getNombre() != null
+                    && !funcionario.getNombre().isBlank()) {
+                encargado = funcionario.getNombre();
+            }
+        } catch (Exception ignorada) {
+            // Se conserva el id del funcionario como respaldo uwu
+        }
+
+        java.util.List<String> recursos = new java.util.ArrayList<>();
+        if (reserva.getIdsRecursosAsignados() != null) {
+            for (String idRecurso : reserva.getIdsRecursosAsignados()) {
+                String descripcion = idRecurso;
+                try {
+                    RecursoDTO recurso = new ServicioRecursoCliente()
+                            .buscarPorNumActivo(idRecurso);
+                    if (recurso != null && recurso.getDescripcion() != null
+                            && !recurso.getDescripcion().isBlank()) {
+                        descripcion = recurso.getDescripcion();
+                    }
+                } catch (Exception ignorada) {
+                    // Se conserva el id del recurso como respaldo uwu
+                }
+                recursos.add(descripcion);
+            }
+        }
+
+        listener.accept(new AlertaReservaDTO(reserva.getActividad(), encargado, reserva.getFecha(), reserva.getHoraInicio(), reserva.getHoraFin(), recursos));
     }
 
 

@@ -1,11 +1,11 @@
 package app.Servicios;
 
-import app.DTO.ReservaDTO;
+import app.DTO.AlertaReservaDTO;
 
 import java.util.function.Consumer;
 
 public interface NotificacionesCliente {
-    void registrarListener(Consumer<ReservaDTO> listener);
+    void registrarListener(Consumer<AlertaReservaDTO> listener);
 
     void iniciar();
 

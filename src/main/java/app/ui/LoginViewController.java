@@ -93,6 +93,14 @@ public class LoginViewController {
         alerta.setContentText(mensaje);
         alerta.showAndWait();
     }
+
+    private void mostrarAdvertencia(String mensaje) {
+        Alert alerta = new Alert(Alert.AlertType.WARNING);
+        alerta.setTitle("Alertas no disponibles");
+        alerta.setHeaderText(null);
+        alerta.setContentText(mensaje);
+        alerta.showAndWait();
+    }
     private void cancelarLogin(javafx.event.ActionEvent event) {
         javafx.stage.Stage stage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
         stage.close();

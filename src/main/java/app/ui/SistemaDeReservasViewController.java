@@ -1,6 +1,5 @@
 package app.ui;
 
-import app.DTO.ReservaDTO;
 import app.Servicios.NotificacionesCliente;
 import javafx.fxml.FXML;
 
@@ -21,8 +20,8 @@ public class SistemaDeReservasViewController {
         }
     }
 
-    private void recibirReserva(ReservaDTO reserva) {
-        alertasController.recibirReserva(reserva);
+    private void recibirReserva(app.DTO.AlertaReservaDTO alerta) {
+        alertasController.recibirAlerta(alerta);
     }
 
     public AlertasViewController getAlertasController() {
