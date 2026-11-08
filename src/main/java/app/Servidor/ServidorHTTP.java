@@ -3,12 +3,14 @@ package app.Servidor;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ServidorHTTP {
 
     public static final int PUERTO = 8080;
     private HttpServer servidor;
+    private ExecutorService ejecutor;
 
     public void iniciar() throws IOException {
         servidor = HttpServer.create(new InetSocketAddress("0.0.0.0", PUERTO), 0);
@@ -24,7 +26,8 @@ public class ServidorHTTP {
         servidor.createContext("/gemini", new GeminiHandler());
 
         // executor
-        servidor.setExecutor(Executors.newFixedThreadPool(10));
+        ejecutor = Executors.newFixedThreadPool(10);
+        servidor.setExecutor(ejecutor);
 
         // arrancar
         servidor.start();
@@ -32,5 +35,10 @@ public class ServidorHTTP {
         // mensajes de consola
         System.out.println("Servidor iniciado en el puerto " + PUERTO);
         System.out.println("POST /usuario/login");
+    }
+
+    public void detener() {
+        if (servidor != null) servidor.stop(0);
+        if (ejecutor != null) ejecutor.shutdownNow();
     }
 }

@@ -59,7 +59,6 @@ public class ServicioNotificacionesCliente implements NotificacionesCliente {
         }
     }
 
-
     public void detener() {
         try {
             if (socket != null) {
