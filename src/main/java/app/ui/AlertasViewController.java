@@ -11,6 +11,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -35,8 +36,9 @@ public class AlertasViewController {
     @FXML
     private void initialize() {
         columnaActividad.setCellValueFactory(new PropertyValueFactory<>("actividad"));
-        configurarBoton(columnaVer, "Ver", this::verAlerta);
-        configurarBoton(columnaDescartar, "Descartar", this::descartarAlerta);
+        configurarBoton(columnaVer, "\uD83D\uDCC1", "Ver detalle de la alerta", null, this::verAlerta);
+        configurarBoton(columnaDescartar, "\u2296", "Descartar alerta",
+                "-fx-text-fill: #d32f2f; -fx-font-weight: bold;", this::descartarAlerta);
         tablaAlertas.setColumnResizePolicy(
                 TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         tablaAlertas.setItems(modelo.getAlertas());
@@ -70,11 +72,18 @@ public class AlertasViewController {
     }
 
     private void configurarBoton(TableColumn<AlertaReservaDTO, Void> columna,
-                                 String texto, java.util.function.Consumer<AlertaReservaDTO> accion) {
+                                 String icono, String descripcion,
+                                 String estilo,
+                                 java.util.function.Consumer<AlertaReservaDTO> accion) {
         columna.setCellFactory(ignored -> new TableCell<>() {
-            private final Button boton = new Button(texto);
+            private final Button boton = new Button(icono);
 
             {
+                boton.setTooltip(new Tooltip(descripcion));
+                boton.setAccessibleText(descripcion);
+                if (estilo != null) {
+                    boton.setStyle(estilo);
+                }
                 boton.setOnAction(event -> accion.accept(getTableView().getItems().get(getIndex())));
             }
 
