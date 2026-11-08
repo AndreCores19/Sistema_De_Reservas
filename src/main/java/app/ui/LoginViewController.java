@@ -3,6 +3,7 @@ package app.ui;
 import app.Controllers.SesionActual;
 import app.DTO.UsuarioDTO;
 import app.Servicios.ServicioUsuarioCliente;
+import app.Servicios.ServicioNotificacionesCliente;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Hyperlink;
@@ -43,7 +44,13 @@ public class LoginViewController {
                 vistaDestino = "/app/ui/SistemaDeReservasFuncionario.fxml";
             }
 
-            javafx.scene.Parent raiz = javafx.fxml.FXMLLoader.load(getClass().getResource(vistaDestino));
+            javafx.fxml.FXMLLoader cargador = new javafx.fxml.FXMLLoader(getClass().getResource(vistaDestino));
+            javafx.scene.Parent raiz = cargador.load();
+            SistemaDeReservasViewController controlador = cargador.getController();
+            ServicioNotificacionesCliente notificaciones =
+                    new ServicioNotificacionesCliente(usuario.getId());
+            controlador.configurarNotificaciones(notificaciones);
+            SesionActual.iniciarNotificaciones(notificaciones);
             javafx.stage.Stage stage = (javafx.stage.Stage) btnLogin.getScene().getWindow();
             stage.setWidth(800);
             stage.setHeight(700);

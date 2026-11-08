@@ -17,8 +17,8 @@ public class ServicioImpresion {
         servicioPDF.abrirReporte(reporteLogica.generarReporteParaFuncionarios(funcionarios));
     }
 
-    public void imprimirMatrizRecursos(CategoriaDTO categoria, List<MatrizDTO> filasMatriz) throws Exception {
-        servicioPDF.abrirReporte(reporteLogica.generarReporteMatrizRecursos(categoria, filasMatriz));
+    public void imprimirMatrizRecursos(CategoriaDTO categoria, List<RecursoDTO> recursos, List<MatrizDTO> filasMatriz) throws Exception {
+        servicioPDF.abrirReporte(reporteLogica.generarReporteMatrizRecursos(categoria, recursos, filasMatriz));
     }
 
     public void imprimirEstadisticaActividades(List<ResultadoEstadisticaDTO> resultados) throws Exception {

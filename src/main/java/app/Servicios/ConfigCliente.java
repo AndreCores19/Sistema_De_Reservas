@@ -12,6 +12,14 @@ public class ConfigCliente {
     public static final String URL_SERVIDOR = "http://" + HOST_SERVIDOR + ":8080";
     public static final int PUERTO_NOTIFICACIONES = 9090;
 
+    public static String urlServidor() {
+        String urlConfigurada = System.getProperty("sistema.reservas.urlServidor");
+        if (urlConfigurada != null && !urlConfigurada.isBlank()) {
+            return urlConfigurada;
+        }
+        return URL_SERVIDOR;
+    }
+
     private static String leerHost() {
         Path archivo = Path.of("servidor.properties");
 

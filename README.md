@@ -222,8 +222,22 @@ Las reservas canceladas no se consideran ocupación. La extracción de IA espera
 
 ### Alertas
 
-# AQUÍ VA LO DE JP
-(panel de Alertas: cómo se muestran las reservas nuevas, Ver y Descartar, y cómo se conecta el hilo receptor al socket de notificaciones).
+El panel `alertas-view.fxml` aparece a la derecha de las pestañas de funcionario y administrador.
+Después de un login exitoso, `LoginViewController` obtiene el controlador del contenedor,
+crea un `ServicioNotificacionesCliente` con el id del funcionario y lo entrega a
+`SistemaDeReservasViewController.configurarNotificaciones`. Este registra el listener,
+abre el socket del puerto 9090 y recibe cada `ReservaDTO` en un hilo de fondo.
+
+`AlertasViewController.recibirReserva` convierte la reserva en un `AlertaReservaDTO` y usa
+`Platform.runLater` para actualizar la lista observable en el hilo de JavaFX. La tabla muestra
+la actividad y ofrece:
+
+- **Ver:** abre una ventana con encargado, fecha, horas y recursos asignados.
+- **Descartar:** solicita confirmación y elimina la alerta únicamente de la lista local; no
+  envía ninguna petición al backend.
+
+Al cerrar sesión, `SesionActual.cerrarSesion()` cierra el socket de notificaciones antes de
+limpiar el usuario activo.
 
 ### Mantenimientos administrativos
 

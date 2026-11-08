@@ -25,9 +25,8 @@ public class ReporteLogica {
     }
 
 
-    public String generarReporteMatrizRecursos(CategoriaDTO categoria, List<MatrizDTO> filasMatriz) throws Exception {
-        List<RecursoDTO> recursosDeCategoria = new app.Servicios.ServicioRecurso().filtrarPorCategoria(categoria.getId());
-
+    public String generarReporteMatrizRecursos(CategoriaDTO categoria, List<RecursoDTO> recursosDeCategoria,
+                                               List<MatrizDTO> filasMatriz) throws Exception {
         List<String> encabezados = new ArrayList<>();
         encabezados.add("Hora");
         for (RecursoDTO recurso : recursosDeCategoria) {
@@ -143,4 +142,3 @@ public class ReporteLogica {
         return rutaSalida;
     }
 }
-
