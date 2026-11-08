@@ -28,7 +28,7 @@ public abstract class ClienteBase {
         try {
             respuesta = cliente.send(solicitud, HttpResponse.BodyHandlers.ofString());
         } catch (ConnectException e) {
-            throw new Exception("No se pudo conectar con el servidor.");
+            throw new Exception("No se pudo conectar con el servidor (" + ConfigCliente.URL_SERVIDOR + ").");
         }
 
         if (respuesta.statusCode() != 200) {

@@ -28,7 +28,7 @@ public class ServidorHTTP {
 
         // arrancar
         servidor.start();
-
+        ServidorNotificaciones.iniciar();
         // mensajes de consola
         System.out.println("Servidor iniciado en el puerto " + PUERTO);
         System.out.println("POST /usuario/login");
