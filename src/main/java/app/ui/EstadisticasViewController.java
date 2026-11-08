@@ -150,7 +150,7 @@ public class EstadisticasViewController {
     }
 
     private void cerrarSesion(javafx.event.ActionEvent event) {
-        SesionActual.setUsuarioActual(null);
+        SesionActual.cerrarSesion();
         try {
             javafx.scene.Parent raiz = javafx.fxml.FXMLLoader.load(
                     getClass().getResource("/app/ui/login-view.fxml")

@@ -119,7 +119,7 @@ public class CalendarizacionRecursosViewController {
     }
 
     private void cerrarSesion(javafx.event.ActionEvent event) {
-        SesionActual.setUsuarioActual(null);
+        SesionActual.cerrarSesion();
         try {
             javafx.scene.Parent raiz = javafx.fxml.FXMLLoader.load(
                     getClass().getResource("/app/ui/login-view.fxml")
@@ -140,7 +140,8 @@ public class CalendarizacionRecursosViewController {
         }
         try {
             List<MatrizDTO> matriz = servicioCalendarizacion.obtenerMatrizDeRecursos(categoria.getId(), fecha);
-            servicioImpresion.imprimirMatrizRecursos(categoria, matriz);
+            List<RecursoDTO> recursos = servicioRecurso.filtrarPorCategoria(categoria.getId());
+            servicioImpresion.imprimirMatrizRecursos(categoria, recursos, matriz);
         } catch (Exception e) {
             mostrarError("Error al obtener e imprimir el calendario: " + e.getMessage());
         }
