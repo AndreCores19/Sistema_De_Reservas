@@ -57,7 +57,6 @@ public class ServicioNotificacionesCliente implements NotificacionesCliente {
                 ReservaDTO reserva = GsonUtil.GSON.fromJson(linea, ReservaDTO.class);
                 alRecibir.accept(reserva);
             }
-
         } catch (IOException e) {
             // el servidor se desconectó
         }
